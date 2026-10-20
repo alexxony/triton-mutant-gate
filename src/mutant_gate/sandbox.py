@@ -1,4 +1,5 @@
 """Run kernel scripts in Nebius Sandboxes (CPU, Triton interpreter) through the contree SDK."""
+import json
 import os
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from contree_sdk import Contree
 CONFIG = Path.home() / ".config" / "mutant-gate" / "image"
 BOUNDCHECK = (Path(__file__).parent / "payload" / "boundcheck.py").read_text()
 COMPILECHECK = (Path(__file__).parent / "payload" / "compilecheck.py").read_text()
+DIFFCHECK = (Path(__file__).parent / "payload" / "diffcheck.py").read_text()
 INSTALL = ("pip install --no-cache-dir triton==3.8.0 torch numpy "
            "--extra-index-url https://download.pytorch.org/whl/cpu 2>&1 | tail -3")
 
@@ -66,3 +68,20 @@ class Sandbox:
         detail = line.partition("first=")[2][:150]
         status = {0: "COMPILES", 3: "COMPILE_ERROR", 4: "NO_LAUNCH", 5: "CHECK_FAILED"}.get(r.exit_code, "CHECK_FAILED")
         return status, detail if line else ((r.stderr or "").strip().splitlines() or [""])[-1][:150]
+
+    async def diff_check(self, original, mutant):
+        """Run the original twice and the mutant once (same seeds, bounds checks on) and compare every kernel launch's tensors. Returns the oracle's result dict.
+
+        class: IDENTICAL / DIFFERS (with where and by how much) / MUTANT_FAILED / UNSTABLE (the original disagrees with itself) /
+        ORIGINAL_FAILED / ERROR (the oracle itself broke). Costs one sandbox invocation, no model.
+        """
+        rec = "python -c \"import boundcheck, diffcheck; diffcheck.record('{src}', '{out}')\" >/dev/null 2>&1; "
+        shell = ("cd /w && export TRITON_INTERPRET=1 PYTHONHASHSEED=0; " + rec.format(src="orig.py", out="o1") + rec.format(src="orig.py", out="o2")
+                 + rec.format(src="mut.py", out="m") + "python diffcheck.py o1 o2 m")
+        files = {"/w/orig.py": original.encode(), "/w/mut.py": mutant.encode(), "/w/boundcheck.py": BOUNDCHECK.encode(),
+                 "/w/diffcheck.py": DIFFCHECK.encode()}
+        r = await self.img.run(shell=shell, files=files, disposable=True, timeout=600)
+        line = next((l for l in reversed((r.stdout or "").splitlines()) if l.startswith("@@DIFFCHECK ")), "")
+        if not line:
+            return {"class": "ERROR", "why": ((r.stderr or "").strip().splitlines() or [""])[-1][:150]}
+        return json.loads(line[len("@@DIFFCHECK "):])

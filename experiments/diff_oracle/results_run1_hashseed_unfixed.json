@@ -1,0 +1,709 @@
+[
+ {
+  "kernel": "vecadd",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 243 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "load_other_changed",
+  "site": "inf#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: mismatch 181x781 scale=1.0"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_max_subtract",
+  "site": "max#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "DIFFERS",
+   "first": {
+    "launch": 0,
+    "fn": "softmax_kernel",
+    "arg": "output_ptr",
+    "n_diff": 104325,
+    "max_abs": 1.4901161193847656e-08,
+    "max_rel": 5.806671035495351e-07,
+    "bits_only": false
+   },
+   "worst": {
+    "launch": 8,
+    "fn": "softmax_kernel",
+    "arg": "output_ptr",
+    "n_diff": 1059,
+    "max_abs": 1.1920928955078125e-07,
+    "max_rel": 2.100211663149979e-06,
+    "bits_only": false
+   }
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1022 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#4",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_store_mask",
+  "site": "store#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#2",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "DIFFERS",
+   "first": {
+    "launch": 1,
+    "fn": "_layer_norm_fwd_fused",
+    "arg": "Rstd",
+    "n_diff": 1,
+    "max_abs": 315.9093120396137,
+    "max_rel": 0.9989929058089538,
+    "bits_only": false
+   },
+   "worst": {
+    "launch": 1,
+    "fn": "_layer_norm_fwd_fused",
+    "arg": "Rstd",
+    "n_diff": 1,
+    "max_abs": 315.9093120396137,
+    "max_rel": 0.9989929058089538,
+    "bits_only": false
+   }
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#2",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_eps",
+  "site": "eps#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "divisor_off_by_one",
+  "site": "div#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "divisor_off_by_one",
+  "site": "div#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "acc_dtype_fp16",
+  "site": "acc#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "acc_dtype_fp16",
+  "site": "acc#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 4.80078125,
+     "max_rel": 18259.230303030305,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9795,
+     "max_abs": 67.71875,
+     "max_rel": 5185.042090970808,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.591796875,
+     "max_rel": 4396.09939148073,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9796,
+     "max_abs": 52.8125,
+     "max_rel": 18917.21582733813,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.572265625,
+     "max_rel": 1170.2482269503546,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9796,
+     "max_abs": 71.53125,
+     "max_rel": 11443.281690140846,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.091796875,
+     "max_rel": 3151.639141205615,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9797,
+     "max_abs": 52.546875,
+     "max_rel": 11550.785551330799,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3842,
+     "max_abs": 4.728515625,
+     "max_rel": 9056.915209326973,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9795,
+     "max_abs": 56.984375,
+     "max_rel": 5447.910798122066,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 4.7666015625,
+     "max_rel": 9271.556205328136,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9797,
+     "max_abs": 56.375,
+     "max_rel": 58294.47875354108,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3842,
+     "max_abs": 5.1962890625,
+     "max_rel": 4219.8228730822875,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9796,
+     "max_abs": 58.78125,
+     "max_rel": 20473.982295830952,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "load_other_changed",
+  "site": "zero#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.1015625,
+     "max_rel": 11075.0699669967,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9795,
+     "max_abs": 55.046875,
+     "max_rel": 9136.778801843318,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "load_other_changed",
+  "site": "zero#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.865234375,
+     "max_rel": 7166.242042931162,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9797,
+     "max_abs": 56.25,
+     "max_rel": 94201.82174462706,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "acc_dtype_fp16",
+  "site": "acc#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3841,
+     "max_abs": 4.62890625,
+     "max_rel": 1244.6384505021522,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9796,
+     "max_abs": 56.609375,
+     "max_rel": 4199.19649122807,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "k_loop_floor_div",
+  "site": "kloop#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.033203125,
+     "max_rel": 4533.906666666667,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9796,
+     "max_abs": 62.171875,
+     "max_rel": 136778.14285714287,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_modulo_wrap",
+  "site": "mod#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3842,
+     "max_abs": 5.58984375,
+     "max_rel": 67299.23255813954,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9797,
+     "max_abs": 59.625,
+     "max_rel": 3560.5593635250916,
+     "bits_only": false
+    }
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_modulo_wrap",
+  "site": "mod#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "UNSTABLE",
+   "why": "two runs of the original differ",
+   "detail": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 1,
+     "fn": "matmul_kernel",
+     "arg": "a_ptr",
+     "n_diff": 3843,
+     "max_abs": 5.587890625,
+     "max_rel": 2042.2298136645963,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 8,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 9797,
+     "max_abs": 55.15625,
+     "max_rel": 10279.850948509486,
+     "bits_only": false
+    }
+   }
+  }
+ }
+]

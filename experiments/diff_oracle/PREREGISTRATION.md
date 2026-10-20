@@ -71,3 +71,26 @@ If 1 or 2 fails the oracle is not shipped; the README keeps the current wording 
 
 ---
 Results are appended below this line.
+
+## Run 1 (2026-10-20, before any change to the harness): results as recorded
+
+Raw rows: `results_run1_hashseed_unfixed.json`. Classes over the 40 mutants (4 originals were run twice inside each invocation):
+21 killed -> MUTANT_FAILED (vecadd, softmax, layernorm), 10 killed -> UNSTABLE (all matmul), 4 survivors IDENTICAL
+(layernorm zero#1, zero#2, acc#0, acc#1), 2 survivors DIFFERS (softmax drop_max_subtract, layernorm mask_lt_to_le lt#2),
+3 survivors UNSTABLE (matmul zero#0, zero#1, acc#0).
+
+Against the criteria: (1) not met as written: the matmul original is not stable, so matmul's `load_other_changed` control could not be
+evaluated (layernorm's 2 are IDENTICAL). (2) not met for matmul (10 killed mutants UNSTABLE, the other 21 pass). (3) not met: 3 survivors UNSTABLE.
+
+Cause, found by reading the generated matmul test (`recorded/generated/run_super1/matmul_T3.py` line 2): it calls
+`torch.manual_seed(1234 + hash(tag))`; `hash()` of a string changes per process (PYTHONHASHSEED), so the test reseeds itself differently every
+run, and the first differing tensor in the UNSTABLE rows is the input `a_ptr`. This is the "seeding" failure the controls were written to catch.
+
+Predictions vs run 1 (survivors with a usable result): layernorm acc#0 IDENTICAL as predicted, acc#1 as predicted, softmax drop_max_subtract DIFFERS as predicted;
+layernorm lt#2 predicted IDENTICAL (50%), observed DIFFERS (Rstd differs in 1 element by 316 abs): a wrong guess, not tuned. matmul acc#0: not evaluable.
+
+## Amendment before run 2 (written before run 2 was started)
+
+One harness change: the sandbox shell exports `PYTHONHASHSEED=0` next to `TRITON_INTERPRET=1`. Nothing else changes: same 44 programs, same rules,
+same classes, same predictions. Run 2 is reported next to run 1, and run 1's rows are kept. Matmul's predictions stay as written
+(acc#0 DIFFERS at 80%; the two `other=` survivors IDENTICAL as the positive control).
