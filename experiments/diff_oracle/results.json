@@ -1,0 +1,453 @@
+[
+ {
+  "kernel": "vecadd",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "vecadd",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 243 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "load_other_changed",
+  "site": "inf#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: mismatch 181x781 scale=1.0"
+  }
+ },
+ {
+  "kernel": "softmax",
+  "op": "drop_max_subtract",
+  "site": "max#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "DIFFERS",
+   "first": {
+    "launch": 0,
+    "fn": "softmax_kernel",
+    "arg": "output_ptr",
+    "n_diff": 104325,
+    "max_abs": 1.4901161193847656e-08,
+    "max_rel": 5.806671035495351e-07,
+    "bits_only": false
+   },
+   "worst": {
+    "launch": 8,
+    "fn": "softmax_kernel",
+    "arg": "output_ptr",
+    "n_diff": 1059,
+    "max_abs": 1.1920928955078125e-07,
+    "max_rel": 2.100211663149979e-06,
+    "bits_only": false
+   }
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_load_mask",
+  "site": "load#4",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_store_mask",
+  "site": "store#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 1023 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#2",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "DIFFERS",
+   "first": {
+    "launch": 1,
+    "fn": "_layer_norm_fwd_fused",
+    "arg": "Rstd",
+    "n_diff": 1,
+    "max_abs": 315.9093120396137,
+    "max_rel": 0.9989929058089538,
+    "bits_only": false
+   },
+   "worst": {
+    "launch": 1,
+    "fn": "_layer_norm_fwd_fused",
+    "arg": "Rstd",
+    "n_diff": 1,
+    "max_abs": 315.9093120396137,
+    "max_rel": 0.9989929058089538,
+    "bits_only": false
+   }
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "mask_lt_to_le",
+  "site": "lt#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "load_other_changed",
+  "site": "zero#2",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "drop_eps",
+  "site": "eps#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "divisor_off_by_one",
+  "site": "div#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "divisor_off_by_one",
+  "site": "div#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: constant row mismatch M=1, N=1, eps=1e-05"
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "acc_dtype_fp16",
+  "site": "acc#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "layernorm",
+  "op": "acc_dtype_fp16",
+  "site": "acc#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 4
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_load_mask",
+  "site": "load#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 3 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_load_mask",
+  "site": "load#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 192 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_store_mask",
+  "site": "store#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 64 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 64 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#2",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 64 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "mask_lt_to_le",
+  "site": "lt#3",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds store: 1 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "load_other_changed",
+  "site": "zero#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 9
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "load_other_changed",
+  "site": "zero#1",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "IDENTICAL",
+   "launches": 9
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "acc_dtype_fp16",
+  "site": "acc#0",
+  "recorded": "SURVIVED",
+  "oracle": {
+   "class": "DIFFERS",
+   "first": {
+    "launch": 0,
+    "fn": "matmul_kernel",
+    "arg": "c_ptr",
+    "n_diff": 176378,
+    "max_abs": 0.125,
+    "max_rel": 480.88235294117646,
+    "bits_only": false
+   },
+   "worst": {
+    "launch": 0,
+    "fn": "matmul_kernel",
+    "arg": "c_ptr",
+    "n_diff": 176378,
+    "max_abs": 0.125,
+    "max_rel": 480.88235294117646,
+    "bits_only": false
+   }
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "k_loop_floor_div",
+  "site": "kloop#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "AssertionError: non-multiple shape 63x65x61 failed"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_modulo_wrap",
+  "site": "mod#0",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 29 active lane(s) outside every kernel tensor')"
+  }
+ },
+ {
+  "kernel": "matmul",
+  "op": "drop_modulo_wrap",
+  "site": "mod#1",
+  "recorded": "KILLED",
+  "oracle": {
+   "class": "MUTANT_FAILED",
+   "why": "InterpreterError: AssertionError('out-of-bounds load: 63 active lane(s) outside every kernel tensor')"
+  }
+ }
+]

@@ -94,3 +94,28 @@ layernorm lt#2 predicted IDENTICAL (50%), observed DIFFERS (Rstd differs in 1 el
 One harness change: the sandbox shell exports `PYTHONHASHSEED=0` next to `TRITON_INTERPRET=1`. Nothing else changes: same 44 programs, same rules,
 same classes, same predictions. Run 2 is reported next to run 1, and run 1's rows are kept. Matmul's predictions stay as written
 (acc#0 DIFFERS at 80%; the two `other=` survivors IDENTICAL as the positive control).
+
+## Run 2 (2026-10-21 KST, `PYTHONHASHSEED=0`): results
+
+Raw rows: `results.json`. 40 mutants: 31 killed -> all `MUTANT_FAILED`; 9 survivors -> 6 `IDENTICAL`, 3 `DIFFERS`; no `UNSTABLE`, no `ERROR`.
+The sandbox API returned HTTP 500 on image lookup once (run aborted before any measurement) and was retried; no result was retried.
+
+Criteria: (1) met: positive control 4/4 `IDENTICAL`, 4/4 originals stable. (2) met: 31/31 killed mutants `MUTANT_FAILED`. (3) met: 9/9 survivors classified.
+
+| survivor | predicted | observed | what moved |
+|---|---|---|---|
+| layernorm `acc_dtype_fp16` acc#0 | IDENTICAL (70%) | IDENTICAL | |
+| layernorm `acc_dtype_fp16` acc#1 | IDENTICAL (70%) | IDENTICAL | |
+| matmul `acc_dtype_fp16` acc#0 | DIFFERS (80%) | DIFFERS | `c_ptr`: 176,378 elements, max abs 0.125 |
+| softmax `drop_max_subtract` max#0 | DIFFERS (85%) | DIFFERS | `output_ptr`: max abs 1.2e-7, max rel 2.1e-6 |
+| layernorm `mask_lt_to_le` lt#2 | IDENTICAL (50%) | **DIFFERS** (prediction wrong) | `Rstd`: 1 element, abs 316, rel 0.999 |
+| layernorm `load_other_changed` zero#1, zero#2; matmul zero#0, zero#1 | IDENTICAL (control) | IDENTICAL | |
+
+4 of the 5 non-control predictions were right.
+
+Against the recorded stage-2 outcomes (no new model call): the 5 survivors Nemotron called `EQUIVALENT` are all `IDENTICAL`
+(5/5, no contradiction). The 2 it killed with a verified test are both `DIFFERS`. The 2 it failed on: `acc#0` is `IDENTICAL` (nothing to find on these launches),
+`lt#2` is `DIFFERS` with a 316 jump in one `Rstd` element, so that survivor is a real gap in the generated test, and stage 2 did not close it.
+
+Limits: 9 survivors, 4 kernels, one generated test per kernel, `IDENTICAL` is "identical on the launches the test makes", not a proof.
+The matmul rerun changed one thing (hash seed); run 1 stays in the repo.

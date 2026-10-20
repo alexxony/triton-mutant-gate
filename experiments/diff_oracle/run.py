@@ -16,7 +16,15 @@ BUNDLE = HERE.parent / "compiled_mode" / "bundle.json"
 
 async def main(only=None, parallel=6):
     bundle = json.loads(BUNDLE.read_text())
-    sb = await Sandbox.open()
+    for attempt in range(4):   # the sandbox API answers HTTP 500 now and then (image lookup, file fetch); nothing has been measured yet
+        try:
+            sb = await Sandbox.open()
+            break
+        except Exception as e:
+            print(f"Sandbox.open failed ({type(e).__name__}), retry {attempt + 1}", flush=True)
+            await asyncio.sleep(5 * (attempt + 1))
+    else:
+        raise SystemExit("sandbox unavailable")
     sem = asyncio.Semaphore(parallel)
 
     async def one(kernel, orig, m):
