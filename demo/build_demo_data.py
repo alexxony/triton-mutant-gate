@@ -47,8 +47,19 @@ def classification():
     return {(c["kernel"], c["op"], c["site"]): c["rows"] for c in rows}
 
 
+def compiled_results():
+    """Pre-registered T4 compiled-run results (experiments/compiled_mode), keyed by (kernel, op, site)."""
+    p = ROOT / "experiments" / "compiled_mode" / "results.json"
+    if not p.exists():
+        return {}, {}
+    d = json.loads(p.read_text())
+    return {(k, e["op"], e["site"]): {"result": e["colab_compiled"]["result"], "detail": e["colab_compiled"]["detail"][:160]}
+            for k, entries in d["kernels"].items() for e in entries if e["op"] != "ORIGINAL"}, d["versions"]
+
+
 def main():
     cls = classification()
+    comp, comp_versions = compiled_results()
     data = {"kernels": {}, "source": "model nvidia/nemotron-3-super-120b-a12b, temperature 0.2, one recorded run per kernel"}
     for k in KERNELS:
         src = (KERNEL_DIR / f"{k}.py").read_text()
@@ -73,12 +84,15 @@ def main():
                 e["stage2"] = stage2(tag, run_id, k, x["op"], x["site"], kr[key])
             if key in cls:
                 e["differential"] = {"cases": len(cls[key]), "identical": sum(1 for r in cls[key] if r["identical"])}
+            if key in comp:
+                e["compiled"] = comp[key]
             muts.append(e)
         data["kernels"][k] = {"run": tag, "source": src, "test": g["test"], "mutants": muts}
     ctl = json.loads((RESULTS / "results_control_noexec.json").read_text())["results"]
     surv = [r for r in ctl if r["truth"] == "SURVIVED"]
     data["control"] = {"items": len(ctl), "accuracy": round(sum(r["pred"] == ("SURVIVES" if r["truth"] == "SURVIVED" else "KILLED") for r in ctl) / len(ctl), 3),
                        "baseline": round(1 - len(surv) / len(ctl), 3), "survives_recall": f"{sum(r['pred'] == 'SURVIVES' for r in surv)}/{len(surv)}"}
+    data["compiled_versions"] = comp_versions
     out = Path(__file__).parent
     (out / "data.json").write_text(json.dumps(data, ensure_ascii=False))
     page = (out / "template.html").read_text().replace("/*DATA*/null", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))

@@ -174,7 +174,13 @@ function renderSurvivors(surv, all) {
     else if (s && s.outcome === "claimed_equivalent") { badge = '<span class="badge b-eq">Nemotron says: equivalent</span>'; note = "Nemotron judged the change harmless; no test was accepted."; cls = "e"; }
     else if (s) { note = "After " + s.tries + " tries, no test passed the original and failed this bug."; }
     else { note = "No follow-up was recorded for this bug in this run."; }
-    const ev = m.differential ? " Differential check: original and buggy outputs identical on " + m.differential.identical + " of " + m.differential.cases + " inputs (evidence, not proof)." : "";
+    let ev = m.differential ? " Differential check: original and buggy outputs identical on " + m.differential.identical + " of " + m.differential.cases + " inputs (evidence, not proof)." : "";
+    if (m.compiled) {
+      const v = DATA.compiled_versions || {};
+      ev += m.compiled.result === "COMPILE_ERROR"
+        ? " On a compiled T4 run this change does not compile (Triton " + (v.triton || "?") + "): the interpreter let an invalid kernel through."
+        : " Compiled T4 run: " + m.compiled.result + ".";
+    }
     d.className = "surv " + cls; d.style.animationDelay = (all ? n * 90 : 0) + "ms";
     d.innerHTML = "<b>" + esc(label(m)) + "</b>" + badge + '<div class="mute">' + esc(note + ev) + "</div>" +
       "<details><summary>Show the change</summary><pre>" + diffHtml(m.diff) + "</pre></details>" +
@@ -199,7 +205,7 @@ $("play").onclick = replay;
 
 $("limits").innerHTML = [
   "Bug classes are a fixed set of rewrite rules (mask, accumulator dtype, epsilon, ...), not real bug reports.",
-  "Execution uses Triton's CPU interpreter. Some bugs (e.g. fp16 accumulators) may behave differently on a compiled GPU run; not verified here.",
+  "Verdicts come from Triton's CPU interpreter. A pre-registered compiled run on one T4 (Triton 3.6.0) showed the fp16-accumulator survivors do not compile, and that a compiled run misses most dropped-mask bugs the interpreter's bounds checks catch. Other GPUs and versions were not tried.",
   "'Equivalent' verdicts come from the model plus input sampling: evidence, not proof.",
   "One recorded run per kernel is shown. Across 5 repeats the same weak spots recurred; model-to-model rankings are not supported by this data.",
   "LLM test generation against mutants and GPU-kernel mutation analysis exist in prior work. This is a combination, not a new method."

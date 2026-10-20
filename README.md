@@ -69,8 +69,11 @@ code pattern is present.
 
 ## Limits (read before trusting a verdict)
 
-- The Triton **CPU interpreter is not a compiler**. Some survivors (fp16 accumulators) may behave differently on a real
-  GPU; that is not verified here. Triton's docs and upstream issues describe interpreter/JIT differences.
+- The Triton **CPU interpreter is not a compiler**. In a pre-registered check on a Colab T4 (Triton 3.6.0), the three fp16
+  accumulator survivors turned out not to compile ("loop-carried variable ... re-assigned to fp32"), so the interpreter let
+  invalid mutants through; in the other direction, a compiled run missed most dropped-mask bugs that the interpreter's bounds
+  checks catch. This compiled check is not part of `mutant-gate run` yet. One GPU, one Triton build
+  ([details](docs/RESULTS.md#compiled-gpu-run-colab-t4)).
 - Mutants come from a fixed set of rewrite rules, not real bug reports. "Equivalent" is the model's opinion plus sampled
   inputs, not a proof.
 - Four tutorial-style kernels only. The data does not support ranking the three Nemotron models.

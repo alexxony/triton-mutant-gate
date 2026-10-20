@@ -49,14 +49,34 @@ That run is invalid and kept only as `results_control_noexec_INVALID_maxtok600.j
 
 What this does and does not show: a no-execution judge beats the baseline by 7.5 points and finds most of the
 equivalent-looking mutants, so **these numbers do not prove that execution is necessary**. Execution matters most
-where numeric behaviour decides the outcome (for example fp16 accumulators: 12 survivors, the judge found 1). Those
-survivors may themselves be an interpreter artifact (see below), so the key is not independent of the tool being tested.
+where numeric behaviour decides the outcome (for example fp16 accumulators: 12 survivors, the judge found 1). The key is
+the interpreter's own verdict, and the compiled-run check below shows it is wrong for some of those survivors.
+
+## Compiled GPU run (Colab T4)
+
+Pre-registered in `experiments/compiled_mode/PREREGISTRATION.md` (committed before the run). The same Nemotron-written tests used in the
+replay demo were run against the original and all 40 mutants, both in the Triton interpreter and compiled on a Tesla T4
+(Triton 3.6.0; the sandbox runs used 3.8.0, so the Colab interpreter was run too, to separate version effects).
+
+- The original kernel passes its test compiled for all 4 kernels.
+- The 9 mutants that survived in the sandbox interpreter split three ways: **3 fp16-accumulator mutants do not compile** (layernorm:
+  `Loop-carried variable _mean has initial type fp16 but is re-assigned to fp32`; matmul: compile error, cause not read), 4 `other=`
+  mutants pass in every mode (consistent with the equivalence evidence), and 2 pass in every mode without looking equivalent
+  (softmax `drop_max_subtract`, layernorm `mask_lt_to_le` at lt#2): the real test gaps.
+- Dropped-mask mutants are mostly **not** detected compiled (8 of 10 loads pass): an out-of-bounds GPU read returns garbage instead of
+  failing. The sandbox's bounds checks are what catch them there.
+- For matmul fp16 the Colab interpreter detects the mutant numerically while the sandbox interpreter did not: a version/machine
+  effect, not a compilation effect.
+
+So the interpreter-only verdict is wrong in both directions: it misses ill-typed mutants (no loop-carried type check) and a compiled
+run misses out-of-bounds reads that the instrumented interpreter catches. One GPU model, one Triton build, four kernels.
 
 ## Known limits
 
 - The interpreter is not a compiler. Triton's own documentation lists interpreter limitations, and upstream issues
-  #10658 and #10291 report JIT/interpreter divergences. Whether the fp16-accumulator survivors would be caught on a
-  compiled GPU run is **not verified** here (no GPU was used).
+  #10658 and #10291 report JIT/interpreter divergences. A compiled T4 run (above) showed that the fp16-accumulator
+  survivors are not valid Triton programs; that check is one GPU, one Triton build, and is not part of the `mutant-gate run`
+  pipeline yet (the verdicts it produces are interpreter verdicts).
 - Mutation operators are a fixed set of rewrite rules, not real bug reports.
 - "Equivalent" is the model's judgement plus sampled inputs.
 - Four kernels, one tutorial-style kernel each; no claim about kernels in general.
