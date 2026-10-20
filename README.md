@@ -63,11 +63,20 @@ accepted test for one. Results vary between runs (temperature 0.2).
 
 ## Your own kernel: script format
 
-A kernel script is one Python file shaped like `examples/kernels/*.py`: an `@triton.jit` kernel, then two blank lines and
-the wrapper `def`, any helpers (for example `check(...)`, which generated tests may call), then the line
-`tier = sys.argv[1]` followed by your existing sanity check. Generic mutants (dropping `mask`/`other`, `<` to `<=`,
-fp32 to fp16 accumulators) apply to any kernel; softmax, layernorm and matmul specific ones fire only when the matching
-code pattern is present.
+Any ordinary Triton file works, for example `examples/plain/leaky_relu.py`:
+
+- every top-level `@triton.jit` function is mutated (with several kernels, sites read `kernel_name:load#0`);
+- imports, defs and classes form the program the tests build on; whatever runs after them (the body of
+  `if __name__ == "__main__":`, or the top-level statements after the last def) is your existing sanity check and is run
+  unconditionally. A file with only definitions is fine, it just has no existing check;
+- `"cuda"` device strings and `.cuda()` calls are pointed at the CPU inside the sandbox (the log says how many);
+- before anything else the unmodified file must run in the sandbox (CPU, Triton interpreter, bounds checks on); if it does
+  not, `run` stops with the last stderr line. Code that needs a real GPU feature, a package missing from the image, or
+  command-line arguments will stop there. `@triton.autotune` stacks are kept but not tuned.
+
+The older layout of `examples/kernels/*.py` (a `tier = sys.argv[1]` line between the helpers and the check) is still read as
+before. Generic mutants (dropping `mask`/`other`, `<` to `<=`, fp32 to fp16 accumulators) apply to any kernel; softmax,
+layernorm and matmul specific ones fire only when the matching code pattern is present.
 
 ## Limits (read before trusting a verdict)
 

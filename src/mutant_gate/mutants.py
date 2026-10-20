@@ -3,9 +3,8 @@
 Generic operators (mask/other removal, `<` to `<=`, fp32 accumulator to fp16, ...) apply to any kernel. Operators tied to a
 specific pattern (softmax max-subtract, layernorm eps, matmul K loop, ...) only fire when that pattern is present.
 """
+import ast
 import re
-
-KERNEL_END = "\n\n\ndef "   # the kernel ends where the wrapper function starts (two blank lines, then `def`)
 
 
 class KernelFormatError(ValueError):
@@ -75,28 +74,55 @@ def operators(kernel_src):
     return {k: v for k, v in ops.items() if v}
 
 
-def kernel_span(src):
+def _is_jit(decorator):
+    d = decorator.func if isinstance(decorator, ast.Call) else decorator   # @triton.jit and @triton.jit(...)
+    return (isinstance(d, ast.Attribute) and d.attr == "jit") or (isinstance(d, ast.Name) and d.id == "jit")
+
+
+def kernel_spans(src):
+    """[(name, start, end)] character spans of every @triton.jit function, decorators included."""
     try:
-        start = src.index("@triton.jit")
-        end = src.index(KERNEL_END, start)
-    except ValueError:
-        raise KernelFormatError("expected an @triton.jit kernel followed by two blank lines and a `def` (the wrapper)") from None
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        raise KernelFormatError(f"the kernel file does not parse: {e.msg} (line {e.lineno})") from None
+    lines = src.splitlines(keepends=True)
+    starts = [0]
+    for line in lines:
+        starts.append(starts[-1] + len(line))
+    spans = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and any(_is_jit(d) for d in node.decorator_list):
+            first = min(d.lineno for d in node.decorator_list)
+            spans.append((node.name, starts[first - 1], starts[node.end_lineno] - len(lines[node.end_lineno - 1]) +
+                          len(lines[node.end_lineno - 1].rstrip("\r\n"))))
+    if not spans:
+        raise KernelFormatError("no top-level @triton.jit function found")
+    return spans
+
+
+def kernel_span(src):
+    """Span of the first kernel."""
+    _, start, end = kernel_spans(src)[0]
     return start, end
 
 
 def make_mutants(src):
-    """Return [(operator, site, mutated_source)] for every applicable, syntactically valid mutation."""
-    s, e = kernel_span(src)
-    head, kern, tail = src[:s], src[s:e], src[e:]
+    """Return [(operator, site, mutated_source)] for every applicable, syntactically valid mutation.
+
+    With more than one @triton.jit kernel in the file, sites are prefixed with the kernel name (`k2:load#0`).
+    """
+    spans = kernel_spans(src)
     mutants = []
-    for op, sites in operators(kern).items():
-        for site, new_kern in sites:
-            code = head + new_kern + tail
-            if code == src:
-                continue
-            try:
-                compile(code, "mutant", "exec")
-            except SyntaxError:
-                continue
-            mutants.append((op, site, code))
+    for name, s, e in spans:
+        head, kern, tail = src[:s], src[s:e], src[e:]
+        for op, sites in operators(kern).items():
+            for site, new_kern in sites:
+                code = head + new_kern + tail
+                if code == src:
+                    continue
+                try:
+                    compile(code, "mutant", "exec")
+                except SyntaxError:
+                    continue
+                mutants.append((op, f"{name}:{site}" if len(spans) > 1 else site, code))
     return mutants

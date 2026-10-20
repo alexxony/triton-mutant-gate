@@ -1,12 +1,14 @@
 """Kernel script format, test-code extraction and the prompts sent to Nemotron.
 
-Script contract (see examples/kernels/): the file contains an @triton.jit kernel, a wrapper, helper functions such as
-`check(...)`, then a line `tier = sys.argv[1]` followed by the existing sanity check. Everything after the first
-`if tier == "T2":` is ignored here.
+Any Triton file works: the @triton.jit functions are mutated, the imports/defs/classes are the "head", and what runs after
+them (an `if __name__ == "__main__":` body, or the top-level statements after the last def) is the existing sanity check.
+The examples in examples/kernels/ use an older layout that is still read: a line `tier = sys.argv[1]` separates the head
+from the sanity check, and everything after the first `if tier == "T2":` is ignored.
 """
 import ast
 import difflib
 import re
+import textwrap
 
 from .mutants import KernelFormatError
 
@@ -52,17 +54,61 @@ Mutant, as a diff against the original kernel:
 ```"""
 
 
+DEFINITIONS = (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+
+
+def _is_main_guard(node):
+    t = node.test if isinstance(node, ast.If) else None
+    return (isinstance(t, ast.Compare) and isinstance(t.left, ast.Name) and t.left.id == "__name__"
+            and len(t.comparators) == 1 and isinstance(t.comparators[0], ast.Constant) and t.comparators[0].value == "__main__")
+
+
+def _split_plain(src):
+    """Any other kernel file: the definitions are the head, whatever runs at the end (an `if __name__ == "__main__":` body or
+    the top-level statements after the last import/def/class) is the existing sanity check."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        raise KernelFormatError(f"the kernel file does not parse: {e.msg} (line {e.lineno})") from None
+    lines = src.splitlines(keepends=True)
+    guard = next((n for n in tree.body if _is_main_guard(n)), None)
+    if guard is not None:
+        body = "".join(lines[guard.body[0].lineno - 1:guard.end_lineno])
+        return "".join(lines[:guard.lineno - 1]), textwrap.dedent(body)
+    last_def = max((i for i, n in enumerate(tree.body) if isinstance(n, DEFINITIONS)), default=-1)
+    if last_def + 1 >= len(tree.body):
+        return src, ""
+    cut = tree.body[last_def + 1].lineno - 1
+    return "".join(lines[:cut]), "".join(lines[cut:])
+
+
+def is_marker_format(src):
+    return TIER_MARKER in src
+
+
 def split_script(src):
-    """Return (head, sanity_check): everything before the tier marker, and the base check that follows it."""
-    head, sep, rest = src.partition(TIER_MARKER)
-    if not sep:
-        raise KernelFormatError("missing the line `tier = sys.argv[1]` that separates the kernel/helpers from the sanity check")
-    return head, rest.partition('if tier == "T2":')[0]
+    """Return (head, sanity_check): the kernels and helpers, and the existing check that runs after them.
+
+    Two layouts: the examples' (a `tier = sys.argv[1]` line separates them) and any ordinary file (see _split_plain).
+    """
+    if is_marker_format(src):
+        head, _, rest = src.partition(TIER_MARKER)
+        return head, rest.partition('if tier == "T2":')[0]
+    return _split_plain(src)
 
 
 def shown_script(src):
     head, t1 = split_script(src)
-    return head + "\ncheck(...)  # existing sanity check on the tutorial shape (see below)\n" + t1
+    if is_marker_format(src):
+        return head + "\ncheck(...)  # existing sanity check on the tutorial shape (see below)\n" + t1
+    return head + ("\n# existing sanity check that runs after the definitions:\n" + t1 if t1.strip() else "")
+
+
+def cpuize(src):
+    """The sandbox is CPU-only: point 'cuda' device strings and .cuda() calls at the CPU. Returns (new_src, number_of_edits)."""
+    new, n1 = re.subn(r"""(['"])cuda(?::\d+)?\1""", '"cpu"', src)
+    new, n2 = re.subn(r"\.cuda\(\)", "", new)
+    return new, n1 + n2
 
 
 def extract_code(text):

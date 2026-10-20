@@ -11,7 +11,7 @@ from pathlib import Path
 from . import llm
 from .mutants import make_mutants
 from .sandbox import Sandbox
-from .script import CLOSE_PROMPT, GENERATE_PROMPT, diff_of, extract_code, full_program, has_check, shown_script, split_script
+from .script import CLOSE_PROMPT, GENERATE_PROMPT, cpuize, diff_of, extract_code, full_program, has_check, shown_script, split_script
 
 
 def _save_raw(raw_dir, name, data, text):
@@ -133,13 +133,18 @@ async def close_survivor(sb, src, test, op, site, mut_code, model, tries, raw_di
 async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out_dir=None, log=print, image=None, compile_check=False):
     """Full pipeline for one kernel script. Writes report.json, report.md and generated_test.py into out_dir."""
     kernel_path = Path(kernel_path)
-    src = kernel_path.read_text()
+    src, edits = cpuize(kernel_path.read_text())
+    if edits:
+        log(f"{kernel_path.name}: {edits} 'cuda' device reference(s) pointed at the CPU for the sandbox")
     muts = make_mutants(src)
     run_id = int(time.time())
     out_dir = Path(out_dir or Path("mutant-gate-out") / kernel_path.stem)
     raw_dir = out_dir / "raw"
     log(f"{kernel_path.name}: {len(muts)} mutants planted")
     sb = await Sandbox.open(image)
+    code, tail = await sb.run(full_program(src, ""), bound=True)   # the unmodified kernel must run before anything is judged
+    if code != 0:
+        raise RuntimeError(f"the original script fails in the sandbox (CPU, Triton interpreter, bounds checks on): {tail or 'exit ' + str(code)}")
     report = {"kernel": kernel_path.name, "model": model, "run_id": run_id, "mutants_planted": len(muts), "accepted": False,
               "tokens": {"generate": 0, "close": 0}, "mutants": []}
 

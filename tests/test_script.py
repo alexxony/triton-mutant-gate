@@ -14,9 +14,9 @@ def test_split_script_separates_helpers_from_sanity_check():
     assert t1.strip() == "check(98432)                      # tutorial shape"
 
 
-def test_split_script_requires_tier_marker():
+def test_split_script_rejects_a_file_that_does_not_parse():
     with pytest.raises(KernelFormatError):
-        split_script("import sys\n")
+        split_script("def broken(:\n")
 
 
 @pytest.mark.parametrize("code,ok", [
