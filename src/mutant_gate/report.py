@@ -16,7 +16,9 @@ def oracle_text(o):
         w = o.get("worst") or o.get("first")
         if not w:
             return f"outputs differ ({o.get('why', '')})"
-        return f"outputs differ in `{w['arg']}` (launch {w['launch']}, max abs {w['max_abs']:.3g}, max rel {w['max_rel']:.3g}), the test's tolerance hides it"
+        if w.get("bits_only"):
+            return f"bit patterns differ in `{w['arg']}` (launch {w['launch']}) but every value compares equal (e.g. -0.0 vs 0.0)"
+        return f"outputs differ in `{w['arg']}` (launch {w['launch']}, max abs {w['max_abs']:.3g}, max rel {w['max_rel']:.3g}); the test passes anyway"
     return f"output oracle: {c.lower()}"
 
 

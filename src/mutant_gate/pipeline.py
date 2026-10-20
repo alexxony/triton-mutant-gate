@@ -89,7 +89,7 @@ async def compile_survivors(sb, src, test, muts, survivors, log, parallel=8):
 async def diff_survivors(sb, src, test, muts, survivors, log, parallel=6):
     """Optional step: run the original and each survivor side by side and compare every kernel launch's tensors (no model).
     Sets m['oracle'] = {class: IDENTICAL / DIFFERS / UNSTABLE / ...}. DIFFERS means the survivor moves outputs but the test's
-    tolerance hides it; IDENTICAL means identical on the launches the test makes (not a proof of equivalence)."""
+    the test passes anyway (the oracle cannot tell why: a loose tolerance or an unchecked output); IDENTICAL means identical on the launches the test makes (not a proof of equivalence)."""
     codes = {(op, site): c for op, site, c in muts}
     original = full_program(src, test)
     sem = asyncio.Semaphore(parallel)

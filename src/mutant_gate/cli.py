@@ -58,7 +58,7 @@ def build_parser():
     r.add_argument("--compile-check", action="store_true", help="also compile each survivor for CUDA (CPU only, no GPU needed) and "
                    "set aside survivors that are not valid GPU programs")
     r.add_argument("--diff-oracle", action="store_true", help="also run each survivor next to the original and compare every kernel "
-                   "launch's tensors (no model): outputs identical, or moved by X and hidden by the test's tolerance")
+                   "launch's tensors (no model): outputs identical, or moved by X while the test still passes")
     r.add_argument("--out", help="output directory (default: mutant-gate-out/<kernel name>)")
     r.add_argument("--image", help="sandbox image id (default: $MUTANT_GATE_IMAGE or the one from setup-image)")
     r.set_defaults(fn=cmd_run)

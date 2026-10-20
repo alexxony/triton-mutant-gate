@@ -117,5 +117,9 @@ Against the recorded stage-2 outcomes (no new model call): the 5 survivors Nemot
 (5/5, no contradiction). The 2 it killed with a verified test are both `DIFFERS`. The 2 it failed on: `acc#0` is `IDENTICAL` (nothing to find on these launches),
 `lt#2` is `DIFFERS` with a 316 jump in one `Rstd` element, so that survivor is a real gap in the generated test, and stage 2 did not close it.
 
+Wording correction after review (the design text above is unchanged): the first report text said a `DIFFERS` survivor was one whose
+"tolerance hides it". The oracle cannot know why a test misses a difference (a loose tolerance or an output the test never checks; for the
+316 jump in `Rstd` no tolerance is plausible), so the report now says "the test passes anyway".
+
 Limits: 9 survivors, 4 kernels, one generated test per kernel, `IDENTICAL` is "identical on the launches the test makes", not a proof.
 The matmul rerun changed one thing (hash seed); run 1 stays in the repo.

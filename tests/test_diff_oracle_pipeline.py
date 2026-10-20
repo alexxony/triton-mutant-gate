@@ -51,4 +51,9 @@ def test_report_shows_oracle_next_to_the_model_claim():
 
 def test_oracle_text_differs_names_the_tensor_and_the_size():
     t = oracle_text({"class": "DIFFERS", "worst": {"arg": "Rstd", "launch": 1, "max_abs": 316.0, "max_rel": 0.999}})
-    assert "`Rstd`" in t and "316" in t and "tolerance hides it" in t
+    assert "`Rstd`" in t and "316" in t and "the test passes anyway" in t and "tolerance" not in t
+
+
+def test_oracle_text_bits_only_does_not_claim_a_value_difference():
+    t = oracle_text({"class": "DIFFERS", "first": {"arg": "y", "launch": 0, "max_abs": 0.0, "max_rel": 0.0, "bits_only": True}})
+    assert "bit patterns differ" in t and "max abs" not in t

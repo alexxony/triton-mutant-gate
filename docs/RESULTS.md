@@ -99,13 +99,16 @@ the T4 study. Result (run 2): all 31 killed mutants fail their run (`MUTANT_FAIL
 |---|---|---|
 | layernorm `load_other_changed` zero#1, zero#2; matmul zero#0, zero#1 | identical | |
 | layernorm `acc_dtype_fp16` acc#0, acc#1 | identical | (these do not compile for CUDA, see above) |
-| softmax `drop_max_subtract` | differs | output: max abs 1.2e-7, hidden by the test's tolerance |
+| softmax `drop_max_subtract` | differs | output: max abs 1.2e-7, plausibly inside the test's tolerance (the oracle does not see the tolerance) |
 | matmul `acc_dtype_fp16` | differs | `c_ptr`: 176,378 elements, max abs 0.125 |
-| layernorm `mask_lt_to_le` lt#2 | differs | `Rstd`: one element moves by 316; the generated test does not catch it and stage 2 found no accepted test either |
+| layernorm `mask_lt_to_le` lt#2 | differs | `Rstd`: one element moves by 316 and the test still passes, so no tolerance explains it; the test most likely never checks that output. Stage 2 found no accepted test either |
 
-Against the recorded stage-2 outcomes: the 5 survivors Nemotron called equivalent are all `IDENTICAL` (no contradiction), the 2
-it killed with a verified test are both `DIFFERS`. That is 9 survivors on 4 kernels, so it supports the model's answers on these cases
-and says nothing about kernels in general.
+The useful column is `differs`: it is what surfaced layernorm lt#2, a real gap that the model's stage 2 did not close. Against the
+recorded stage-2 outcomes: the 2 survivors Nemotron killed with a verified test are both `DIFFERS`, and the 5 it called equivalent
+are all `IDENTICAL`, so no `EQUIVALENT` claim is contradicted. That check is one-sided: `IDENTICAL` is measured on the same
+launches that already failed to kill the mutant, so it only means "no contradiction on these inputs"; the earlier hand-written-input
+study, which used different inputs, is still the stronger evidence for the `other=` cases. 9 survivors on 4 kernels, no claim about
+kernels in general.
 
 Two things went wrong on the way and are kept in the pre-registration: run 1 left the matmul original unstable (the generated test seeds
 itself with `hash(str)`, which changes per process; the sandbox now sets `PYTHONHASHSEED=0`), and the sandbox API returned HTTP 500 once
