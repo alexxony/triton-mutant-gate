@@ -1,0 +1,97 @@
+{
+ "run_id": 1792423295,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2336,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2492,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 12962,
+   "log": [
+    "Your test FAILS on the original kernel (NameError: name '_fp16_mean_error' is not defined. Did you mean: '_test_fp16_mean_error'?). It must pass on the original.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 15292,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 13660,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: mutant not distinguished on shape 64x64x65). It must pass on the original.",
+    "Your test FAILS on the original kernel (AssertionError: mutant not distinguished on shape 64x64x65). It must pass on the original.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2877,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 7547,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

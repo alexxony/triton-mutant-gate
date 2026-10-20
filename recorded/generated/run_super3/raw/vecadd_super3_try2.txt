@@ -1,0 +1,9 @@
+finish_reason=stop
+usage={'completion_tokens': 513, 'prompt_tokens': 580, 'total_tokens': 1093, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 456, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 580}
+---
+
+
+```python
+for sz in (0, 1, 1023, 1024, 1025, 2047, 4095, 50000):
+    check(sz)
+```

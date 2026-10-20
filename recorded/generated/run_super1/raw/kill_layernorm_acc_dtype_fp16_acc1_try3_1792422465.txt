@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 1062, 'prompt_tokens': 2165, 'total_tokens': 3227, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1000, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2165}
+---
+
+
+EQUIVALENT
+Under the CPU interpreter (TRITON_INTERPRET=1) the change from float32 to float16 for the variance accumulator does not affect the computed values because the interpreter performs arithmetic in full precision, making the mutant behaviorally indistinguishable from the original.

@@ -1,0 +1,37 @@
+finish_reason=stop
+usage={'completion_tokens': 2141, 'prompt_tokens': 635, 'total_tokens': 2776, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1751, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 635}
+---
+
+
+```python
+def _extra_check(m, n, scale=1.0, dtype=torch.float32, contiguous=True):
+    torch.manual_seed(0)
+    x = torch.randn(m, n, dtype=dtype) * scale
+    if not contiguous:
+        # create a non‑contiguous view by striding a larger base tensor
+        base = torch.randn(m * 2, n * 2, dtype=dtype) * scale
+        x = base[::2, ::2][:m, :n]
+    y = softmax(x)
+    y_ref = torch.softmax(x, dim=1)
+    assert torch.allclose(y, y_ref, atol=1e-5, rtol=1e-5), \
+        f"m={m}, n={n}, dtype={dtype}, contiguous={contiguous}, scale={scale}"
+
+# small width, many rows
+_extra_check(128, 1, scale=1.0)
+
+# width not a power of two
+_extra_check(20, 781, scale=0.5)
+
+# width a power of two
+_extra_check(5, 1024, scale=2.0)
+
+# non‑contiguous input (strided)
+_extra_check(50, 30, scale=1.0, contiguous=False)
+
+# float64 precision
+_extra_check(16, 128, scale=1.0, dtype=torch.float64)
+
+# extreme values to test overflow/underflow handling
+_extra_check(8, 256, scale=1e4)   # large positive numbers
+_extra_check(8, 256, scale=1e-4)  # large negative numbers after softmax shift
+```

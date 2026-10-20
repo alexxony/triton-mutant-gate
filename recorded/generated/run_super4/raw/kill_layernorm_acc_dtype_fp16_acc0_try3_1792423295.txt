@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 2604, 'prompt_tokens': 2393, 'total_tokens': 4997, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2549, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2393}
+---
+
+
+EQUIVALENT
+The CPU interpreter used when `TRITON_INTERPRET=1` performs all arithmetic in float32 regardless of the declared tensor dtypes, so storing the intermediate accumulator in float16 does not change the computed values.

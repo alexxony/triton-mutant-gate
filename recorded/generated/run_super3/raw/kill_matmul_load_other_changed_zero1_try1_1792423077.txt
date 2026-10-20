@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 915, 'prompt_tokens': 2056, 'total_tokens': 2971, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 826, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2056}
+---
+
+
+EQUIVALENT
+The mutant only changes the fill value for out‑of‑bounds elements of **B** from 0 to 1, but the corresponding out‑of‑bounds elements of **A** are still zeroed by their mask, so every masked product contributes 0·1 = 0, leaving the accumulator unchanged for all inputs. Hence the mutant’s behavior is indistinguishable from the original.

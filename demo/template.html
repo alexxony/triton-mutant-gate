@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutant Replay</title>
+<style>
+:root{--bg:#f4f5f8;--panel:#fff;--ink:#14161c;--mute:#667085;--line:#e3e6ee;--ok:#12805c;--okbg:#dff5ea;--bad:#c4281c;--badbg:#fde4e1;--warn:#9a6200;--warnbg:#fff0cf;--acc:#4f46e5;--acc2:#0ea5a4;--code:#f0f2f7;--glow:rgba(196,40,28,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0f14;--panel:#161922;--ink:#eceef4;--mute:#98a1b3;--line:#272c3a;--ok:#4ade9b;--okbg:#10301f;--bad:#ff7a70;--badbg:#3b1815;--warn:#f5c35c;--warnbg:#33290f;--acc:#8b93ff;--acc2:#2dd4bf;--code:#1d212d;--glow:rgba(255,122,112,.4)}}
+:root[data-theme="dark"]{--bg:#0d0f14;--panel:#161922;--ink:#eceef4;--mute:#98a1b3;--line:#272c3a;--ok:#4ade9b;--okbg:#10301f;--bad:#ff7a70;--badbg:#3b1815;--warn:#f5c35c;--warnbg:#33290f;--acc:#8b93ff;--acc2:#2dd4bf;--code:#1d212d;--glow:rgba(255,122,112,.4)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:0 16px 72px}
+.hero{padding:40px 0 20px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:700}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:8px 0 10px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:17px;color:var(--mute);max-width:720px;margin:0 0 16px}
+.banner{display:inline-block;background:var(--warnbg);color:var(--warn);border-radius:999px;padding:5px 14px;font-size:12.5px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:22px 0}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.tile b{display:block;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:12.5px;color:var(--mute)}
+.tile.t-bad b{color:var(--bad)} .tile.t-ok b{color:var(--ok)} .tile.t-warn b{color:var(--warn)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 6px}
+.mute{color:var(--mute);font-size:13px}
+.map{display:grid;gap:10px;margin-top:10px}
+.mrow{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px}
+.mname{font:600 13px ui-monospace,Menlo,monospace;cursor:pointer}
+.mname.on{color:var(--acc)}
+.cells{display:flex;flex-wrap:wrap;gap:5px}
+.cell{width:22px;height:22px;border-radius:6px;background:var(--okbg);border:1px solid color-mix(in srgb,var(--ok) 55%,transparent);cursor:pointer;transition:transform .12s}
+.cell:hover{transform:scale(1.25)}
+.cell.s{background:var(--bad);animation:pulse 1.8s infinite}
+.cell.dim{opacity:.18} .cell.sel{outline:2px solid var(--acc);outline-offset:2px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--glow)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--mute);margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.flow{display:flex;gap:6px;margin:6px 0 16px;flex-wrap:wrap;align-items:center}
+.fstep{flex:1 1 150px;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:9px 12px;font-size:13px;opacity:.55;transition:all .3s}
+.fstep b{display:block;color:var(--acc);font-size:12px;letter-spacing:.08em}
+.fstep.on{opacity:1;border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent)}
+.fstep.done{opacity:1}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:7px 14px}
+button.play{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff;border:0;font-weight:600}
+pre{background:var(--code);border-radius:10px;padding:11px 13px;overflow:auto;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:8px 0;max-height:340px}
+pre .add{color:var(--ok);background:var(--okbg);display:block} pre .del{color:var(--bad);background:var(--badbg);display:block} pre .hunk{color:var(--mute);display:block}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;margin-left:6px}
+.b-ok{background:var(--okbg);color:var(--ok)} .b-eq{background:var(--warnbg);color:var(--warn)} .b-bad{background:var(--badbg);color:var(--bad)}
+.surv{border-left:4px solid var(--line);padding:6px 0 6px 14px;margin:12px 0;animation:fade .4s both}
+.surv.k{border-color:var(--ok)} .surv.e{border-color:var(--warn)} .surv.f{border-color:var(--bad)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+details summary{cursor:pointer;color:var(--acc);font-size:13px;margin-top:4px}
+ul{margin:6px 0 0 18px;padding:0} li{margin:3px 0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px} .two>*{min-width:0} @media(max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+pre:empty{display:none}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<section class="hero">
+  <div class="eyebrow">for Triton kernel authors</div>
+  <h1>Does your test suite really protect your kernel?</h1>
+  <p class="lead">We plant small bugs in a kernel, run your tests against every one in a sandbox, and ask Nemotron to write tests for the bugs that slipped through. Only a test that passes the original and fails the buggy copy is accepted.</p>
+  <span class="banner" id="banner"></span>
+  <div class="tiles" id="tiles"></div>
+</section>
+
+<div class="card">
+  <h2>Detection map</h2>
+  <p class="mute">One square per planted bug. Red squares are bugs the tests did not catch. Click a square or a kernel name.</p>
+  <div class="map" id="map"></div>
+  <div class="legend"><span><i style="background:var(--okbg);border:1px solid var(--ok)"></i>caught by the tests</span><span><i style="background:var(--bad)"></i>survived</span></div>
+</div>
+
+<div class="bar"><button class="play" id="play">&#9654; Replay this kernel</button><span class="mute" id="which"></span></div>
+<div class="flow" id="flow">
+  <div class="fstep" data-s="1"><b>1 &middot; PLANT</b>bugs in your kernel</div>
+  <div class="fstep" data-s="2"><b>2 &middot; WRITE</b>Nemotron writes tests, blind to the bugs</div>
+  <div class="fstep" data-s="3"><b>3 &middot; RUN</b>every bug vs. the tests, in a sandbox</div>
+  <div class="fstep" data-s="4"><b>4 &middot; CLOSE</b>Nemotron targets the survivors</div>
+</div>
+
+<div class="two">
+  <div class="card"><h2>Your kernel</h2><pre id="src"></pre></div>
+  <div class="card"><h2>Tests Nemotron wrote</h2><p class="mute" id="testnote"></p><pre id="test"></pre></div>
+</div>
+
+<div class="card" id="detail"><h2>Selected bug</h2><p class="mute" id="detailnote">Click a square in the map.</p><pre id="diff"></pre></div>
+<div class="card"><h2>Bugs the tests missed, and what Nemotron did</h2><div id="survivors"></div></div>
+
+<div class="two">
+  <div class="card"><h2>What this does not show</h2><ul id="limits"></ul></div>
+  <div class="card"><h2>Control: a model judging without running anything</h2><div class="tiles" id="stats" style="margin:8px 0"></div><p class="mute" id="ctlnote"></p></div>
+</div>
+</main>
+<script>
+const DATA = /*DATA*/null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const label = m => m.op.replace(/_/g, " ") + " @ " + m.site;
+const names = Object.keys(DATA.kernels);
+let cur = null, timers = [], sel = null;
+
+function diffHtml(d) {
+  return d.split("\n").map(l => {
+    const c = l.startsWith("+++") || l.startsWith("---") ? "hunk" : l.startsWith("+") ? "add" : l.startsWith("-") ? "del" : l.startsWith("@@") ? "hunk" : "";
+    return c ? '<span class="' + c + '">' + esc(l) + "</span>" : esc(l) + "\n";
+  }).join("");
+}
+
+$("banner").textContent = "Replay of recorded runs: " + DATA.source + ". Nothing runs in your browser.";
+
+function tiles() {
+  let total = 0, surv = 0, killed = 0, eq = 0;
+  names.forEach(k => DATA.kernels[k].mutants.forEach(m => {
+    total++;
+    if (m.T3B === "SURVIVED") { surv++; const o = m.stage2 && m.stage2.outcome; if (o === "killed") killed++; if (o === "claimed_equivalent") eq++; }
+  }));
+  $("tiles").innerHTML = [["", total, "bugs planted"], ["t-ok", total - surv, "caught by the first tests"], ["t-bad", surv, "survived"], ["t-ok", killed, "closed by a new, verified test"], ["t-warn", eq, "judged equivalent by Nemotron"]]
+    .map(([c, n, t]) => '<div class="tile ' + c + '"><b>' + n + "</b><span>" + t + "</span></div>").join("");
+}
+
+function buildMap() {
+  $("map").innerHTML = "";
+  names.forEach(k => {
+    const row = document.createElement("div"); row.className = "mrow";
+    row.innerHTML = '<div class="mname" id="mn-' + k + '">' + k + '</div><div class="cells" id="cells-' + k + '"></div>';
+    $("map").appendChild(row);
+    row.querySelector(".mname").onclick = () => show(k);
+    DATA.kernels[k].mutants.forEach((m, i) => {
+      const c = document.createElement("div"); c.className = "cell" + (m.T3B === "SURVIVED" ? " s" : ""); c.title = label(m) + (m.T3B === "SURVIVED" ? " (survived)" : " (caught)");
+      c.onclick = () => { show(k, true); pick(k, i); };
+      row.querySelector(".cells").appendChild(c);
+    });
+  });
+}
+
+function pick(k, i) {
+  const m = DATA.kernels[k].mutants[i]; sel = [k, i];
+  document.querySelectorAll(".cell").forEach(c => c.classList.remove("sel"));
+  document.querySelectorAll("#cells-" + k + " .cell")[i].classList.add("sel");
+  $("detailnote").textContent = k + " / " + label(m) + " — " + (m.T3B === "SURVIVED" ? "survived the tests" : "caught: " + m.detail);
+  $("diff").innerHTML = diffHtml(m.diff);
+}
+
+function stage(n) {
+  document.querySelectorAll(".fstep").forEach(f => { const s = +f.dataset.s; f.classList.toggle("on", s === n); f.classList.toggle("done", s < n); });
+}
+
+function show(k, quiet) {
+  timers.forEach(clearTimeout); timers = []; cur = k;
+  document.querySelectorAll(".mname").forEach(n => n.classList.toggle("on", n.id === "mn-" + k));
+  document.querySelectorAll(".cells").forEach(c => c.parentElement.classList.toggle("dim", false));
+  const K = DATA.kernels[k], muts = K.mutants, surv = muts.filter(m => m.T3B === "SURVIVED");
+  $("which").textContent = k + " · recorded run " + K.run;
+  $("src").textContent = K.source.split("\ntier = sys.argv[1]")[0];
+  $("test").textContent = K.test;
+  $("testnote").textContent = "Accepted only because it passes your original kernel, with out-of-bounds checks on. " + muts.length + " bugs, " + surv.length + " survived.";
+  renderSurvivors(surv, true);
+  stage(0);
+  if (!quiet) { $("diff").innerHTML = ""; $("detailnote").textContent = "Click a square in the map."; }
+}
+
+function renderSurvivors(surv, all) {
+  const box = $("survivors"); box.innerHTML = "";
+  if (!surv.length) { box.innerHTML = '<p class="mute">Every planted bug was caught by the generated test. Nothing to follow up.</p>'; return; }
+  surv.forEach((m, n) => {
+    const s = m.stage2, d = document.createElement("div");
+    let badge = '<span class="badge b-bad">no accepted test</span>', note = "", cls = "f";
+    if (s && s.outcome === "killed") { badge = '<span class="badge b-ok">new test kills it</span>'; note = "Accepted only after execution: the test passes your original kernel and fails the buggy one."; cls = "k"; }
+    else if (s && s.outcome === "claimed_equivalent") { badge = '<span class="badge b-eq">Nemotron says: equivalent</span>'; note = "Nemotron judged the change harmless; no test was accepted."; cls = "e"; }
+    else if (s) { note = "After " + s.tries + " tries, no test passed the original and failed this bug."; }
+    else { note = "No follow-up was recorded for this bug in this run."; }
+    const ev = m.differential ? " Differential check: original and buggy outputs identical on " + m.differential.identical + " of " + m.differential.cases + " inputs (evidence, not proof)." : "";
+    d.className = "surv " + cls; d.style.animationDelay = (all ? n * 90 : 0) + "ms";
+    d.innerHTML = "<b>" + esc(label(m)) + "</b>" + badge + '<div class="mute">' + esc(note + ev) + "</div>" +
+      "<details><summary>Show the change</summary><pre>" + diffHtml(m.diff) + "</pre></details>" +
+      (s && s.reply_head ? "<details><summary>Nemotron reply</summary><pre>" + esc(s.reply_head) + "</pre></details>" : "") +
+      (s && s.test ? "<details><summary>" + (s.outcome === "killed" ? "Show its accepted test" : "Show its last attempt (rejected)") + "</summary><pre>" + esc(s.test) + "</pre></details>" : "");
+    box.appendChild(d);
+  });
+}
+
+function replay() {
+  if (!cur) return; show(cur, true);
+  const cells = [...document.querySelectorAll("#cells-" + cur + " .cell")], K = DATA.kernels[cur];
+  cells.forEach(c => c.style.visibility = "hidden"); $("survivors").innerHTML = ""; $("test").style.opacity = .15;
+  stage(1); const at = (ms, f) => timers.push(setTimeout(f, ms));
+  at(900, () => stage(2)); at(1200, () => { $("test").style.opacity = 1; });
+  at(2400, () => stage(3));
+  cells.forEach((c, i) => at(2600 + i * 220, () => { c.style.visibility = "visible"; }));
+  const t = 2600 + cells.length * 220 + 600;
+  at(t, () => { stage(4); renderSurvivors(K.mutants.filter(m => m.T3B === "SURVIVED"), true); });
+}
+$("play").onclick = replay;
+
+$("limits").innerHTML = [
+  "Bug classes are a fixed set of rewrite rules (mask, accumulator dtype, epsilon, ...), not real bug reports.",
+  "Execution uses Triton's CPU interpreter. Some bugs (e.g. fp16 accumulators) may behave differently on a compiled GPU run; not verified here.",
+  "'Equivalent' verdicts come from the model plus input sampling: evidence, not proof.",
+  "One recorded run per kernel is shown. Across 5 repeats the same weak spots recurred; model-to-model rankings are not supported by this data.",
+  "LLM test generation against mutants and GPU-kernel mutation analysis exist in prior work. This is a combination, not a new method."
+].map(t => "<li>" + t + "</li>").join("");
+const c = DATA.control;
+$("stats").innerHTML = [["Judge accuracy", (c.accuracy * 100).toFixed(1) + "%"], ["Always-'caught' baseline", (c.baseline * 100).toFixed(1) + "%"], ["Survivors it found", c.survives_recall]]
+  .map(([a, b]) => '<div class="tile"><b style="font-size:22px">' + b + "</b><span>" + a + "</span></div>").join("");
+$("ctlnote").textContent = "Nemotron predicted, without running anything, whether each test suite catches each planted bug (" + c.items + " items; execution results were the answer key). It beats the baseline only modestly, so running the tests matters most where numeric behavior decides the outcome.";
+
+tiles(); buildMap(); show(names.includes("layernorm") ? "layernorm" : names[0]);
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 1496, 'prompt_tokens': 1708, 'total_tokens': 3204, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1433, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1708}
+---
+
+
+EQUIVALENT
+The mask that determines out‑of‑bounds elements is the same for both the a and b loads, so any element replaced by 1 in b is multiplied by a zero column from a, leaving the accumulator unchanged.

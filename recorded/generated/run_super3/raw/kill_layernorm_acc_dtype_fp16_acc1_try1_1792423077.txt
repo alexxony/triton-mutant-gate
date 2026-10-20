@@ -1,0 +1,28 @@
+finish_reason=stop
+usage={'completion_tokens': 2457, 'prompt_tokens': 1479, 'total_tokens': 3936, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2175, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1479}
+---
+
+
+```python
+def check_large_variance():
+    """Test that triggers overflow in float16 variance accumulator."""
+    torch.manual_seed(0)
+    M, N = 1, 200_000          # 200k elements (< 2M limit)
+    eps = 1e-5
+    # Large‑amplitude input → variance ~1e6, sum of squares >> float16 max
+    x = torch.randn(M, N, dtype=torch.float32) * 1e3
+    w = torch.randn(N)
+    b = torch.randn(N)
+
+    # Reference from PyTorch (float32)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    # Triton kernel under test
+    y = layer_norm(x, w, b, eps)
+
+    # The mutant (float16 _var) will overflow → rstd≈0 → y≈b, causing a large mismatch
+    assert torch.allclose(y, ref, atol=1e-2, rtol=1e-2), \
+        f"large‑variance test failed: max diff={(y-ref).abs().max().item()}"
+
+# Run the new test
+check_large_variance()
+```

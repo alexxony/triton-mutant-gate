@@ -1,0 +1,95 @@
+{
+ "run_id": 1792423339,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3507,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2519,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 16616,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test FAILS on the original kernel (          8.1062e-06, -2.8312e-06]])). It must pass on the original.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 15626,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 10575,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: original should match reference). It must pass on the original.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 7623,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 7949,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

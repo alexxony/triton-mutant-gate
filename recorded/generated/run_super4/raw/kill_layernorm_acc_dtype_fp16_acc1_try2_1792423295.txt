@@ -1,0 +1,30 @@
+finish_reason=stop
+usage={'completion_tokens': 4794, 'prompt_tokens': 2074, 'total_tokens': 6868, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 4468, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2074}
+---
+
+
+```python
+def _test_large_spread_quantization():
+    """Input with large spread so that per‑column squared deviations are
+    representable in float16 but suffer from coarse quantization,
+    causing a noticeable variance error when _var is accumulated in float16."""
+    torch.manual_seed(2025)
+    M, N = 2, 1024          # N matches BLOCK_SIZE so each column processed once
+    # Values ranging from -200 to +200 give squared deviations up to 40 000 (<65504)
+    x = torch.linspace(-200.0, 200.0, N, dtype=torch.float32).unsqueeze(0).repeat(M, 1)
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+
+    # PyTorch reference (float32 throughout)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    # Triton kernel under test
+    y = layer_norm(x, w, b, eps=1e-5)
+
+    # Original kernel should match reference within the existing tolerance
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        "Large‑spread quantization test failed on the original kernel"
+
+
+# Run the additional test
+_test_large_spread_quantization()
+```

@@ -1,0 +1,24 @@
+finish_reason=stop
+usage={'completion_tokens': 1071, 'prompt_tokens': 1595, 'total_tokens': 2666, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 815, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1595}
+---
+
+
+```python
+def test_zero_variance():
+    """When variance is zero (constant row) removing eps leads to inf/nan."""
+    M, N = 2, 256          # small enough to stay well under 2M elements
+    eps = 1e-5
+    torch.manual_seed(123)
+    const_val = -1.2345    # any constant works
+    x = torch.full((M, N), const_val, dtype=torch.float32)
+    w = torch.randn(N, dtype=torch.float32)
+    b = torch.randn(N, dtype=torch.float32)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y = layer_norm(x, w, b, eps)
+    # For constant input, LayerNorm output should be exactly the bias (up to tiny numerical error)
+    assert torch.allclose(y, ref, atol=1e-5, rtol=0), \
+        f"zero‑variance test failed: max diff = {(y - ref).abs().max()}"
+
+# Run the new test
+test_zero_variance()
+```

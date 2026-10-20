@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 414, 'prompt_tokens': 1366, 'total_tokens': 1780, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 346, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1366}
+---
+
+
+EQUIVALENT – the change only alters the value loaded for out‑of‑bounds positions, but those values are immediately zeroed by the subsequent `tl.where(cols < N, …, 0.)`, so the variance accumulation (and thus the whole kernel) produces identical results for all valid inputs.

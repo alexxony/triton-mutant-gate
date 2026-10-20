@@ -1,0 +1,139 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "layernorm": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests to stress boundary/tail handling, edge dtypes, and numeric extremes\ndef _run_test(M, N, eps=1e-5, shift=0.0, dtype=torch.float32):\n    torch.manual_seed(0)\n    x = (-2.3 + 0.5 * torch.randn(M, N, dtype=dtype)) + shift\n    w = torch.rand(N, dtype=dtype)\n    b = torch.rand(N, dtype=dtype)\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    y = layer_norm(x, w, b, eps)\n    assert torch.allclose(y, ref, atol=1e-2, rtol=0), (\n        f\"LayerNorm mismatch: M={M}, N={N}, dtype={dtype}, eps={eps}, shift={shift}\"\n    )\n\n# 1. Very small feature size (tail < BLOCK_SIZE)\n_run_test(M=128,   N=1,    eps=1e-5)\n\n# 2. Minimal feature size with many rows (stress grid dimension)\n_run_test(M=50000, N=2,   eps=1e-5)\n\n# 3. Just under BLOCK_SIZE (tests last\u2011iteration mask)\n_run_test(M=96,    N=1023, eps=1e-5)\n\n# 4. Just over BLOCK_SIZE (tests wrap\u2011around into second iteration)\n_run_test(M=96,    N=1025, eps=1e-5)\n\n# 5. Medium size, multiple of BLOCK_SIZE/2\n_run_test(M=48,    N=2048, eps=1e-5)\n\n# 6. Larger size, still within element budget\n_run_test(M=24,    N=4096, eps=1e-5)\n\n# 7. Float16 input (checks dtype conversion in kernel)\n_run_test(M=64,    N=1024, eps=1e-5, dtype=torch.float16)\n\n# 8. Small eps + large shift (tests near\u2011zero variance and large mean)\n_run_test(M=32,    N=1024, eps=1e-12, shift=1e3)\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 512 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 896 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#2",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#3",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#4",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 512 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 768 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: LayerNorm mismatch: M=50000, N=2, dtype=torch.float32, eps=1e-05, shift=0.0"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: LayerNorm mismatch: M=128, N=1, dtype=torch.float32, eps=1e-05, shift=0.0"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#2",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "drop_eps",
+     "site": "eps#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: LayerNorm mismatch: M=128, N=1, dtype=torch.float32, eps=1e-05, shift=0.0"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: LayerNorm mismatch: M=128, N=1, dtype=torch.float32, eps=1e-05, shift=0.0"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: LayerNorm mismatch: M=128, N=1, dtype=torch.float32, eps=1e-05, shift=0.0"
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  }
+ },
+ "total_tokens": 3802
+}

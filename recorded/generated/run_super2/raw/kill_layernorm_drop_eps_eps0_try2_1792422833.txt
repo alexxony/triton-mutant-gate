@@ -1,0 +1,26 @@
+finish_reason=stop
+usage={'completion_tokens': 2152, 'prompt_tokens': 1931, 'total_tokens': 4083, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1851, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1931}
+---
+
+
+```python
+def test_small_variance():
+    """When variance is much smaller than eps, removing eps changes the scaling noticeably."""
+    torch.manual_seed(2024)
+    M, N = 2, 64                     # well under 2M elements
+    const_val = 0.7                  # any constant offset
+    half_range = 0.0004              # produces std ≈ 0.00023 << eps
+    x = const_val + (torch.rand(M, N) - 0.5) * 2 * half_range  # uniform in [const±half_range]
+    w = torch.ones(N, dtype=torch.float32)
+    b = torch.zeros(N, dtype=torch.float32)
+    eps = 1e-5
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y = layer_norm(x, w, b, eps)
+    # Original kernel (with eps) should match PyTorch's reference tightly;
+    # the mutant (missing eps) will deviate far beyond this tolerance.
+    assert torch.allclose(y, ref, atol=5e-3, rtol=0), \
+        f"small‑variance test failed: max diff = {(y - ref).abs().max()}"
+
+# Run the new test
+test_small_variance()
+```

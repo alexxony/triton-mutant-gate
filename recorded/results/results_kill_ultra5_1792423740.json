@@ -1,0 +1,97 @@
+{
+ "run_id": 1792423740,
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2578,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2650,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 19613,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 31080,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3475,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3678,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 22675,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "accepted"
+   ],
+   "test": "# Test for float16 accumulator rounding error with many iterations\ndef check_sparse_large_k():\n    M, N, K = 1, 1, 320000  # 10000 tiles of size 32\n    a = torch.zeros((M, K), dtype=torch.float16)\n    b = torch.zeros((K, N), dtype=torch.float16)\n    # Set every 32nd element to 1.0 so each tile dot product = 1.0\n    a[0, ::32] = 1.0\n    b[::32, 0] = 1.0\n    ref = torch.matmul(a, b)  # exact sum = 10000, exactly representable in float16\n    out = matmul(a, b)\n    # Original kernel (float32 accumulator) should match ref exactly\n    # Mutant (float16 accumulator) will accumulate rounding errors > 0.125\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), f\"sparse large K mismatch: out={out.item()}, ref={ref.item()}\"\n\ncheck_sparse_large_k()\n",
+   "mutant_failure": "AssertionError: sparse large K mismatch: out=2048.0, ref=10000.0"
+  }
+ ]
+}

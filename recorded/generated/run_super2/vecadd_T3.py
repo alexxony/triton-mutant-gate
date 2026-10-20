@@ -1,0 +1,71 @@
+# Additional tests to expose boundary, tail, numeric, dtype and memory‑safety bugs
+
+def _test_multiple_sizes():
+    """Test various lengths (including tail cases) in a single launch."""
+    sizes = [1, 1023, 1024, 2049, 4096, 8192, 16384]  # total < 100k
+    total = sum(sizes)
+    x_big = torch.empty(total, dtype=torch.float32)
+    y_big = torch.empty(total, dtype=torch.float32)
+    exp_big = torch.empty(total, dtype=torch.float32)
+    offset = 0
+    for sz in sizes:
+        x_part = torch.randn(sz)
+        y_part = torch.randn(sz)
+        x_big[offset:offset+sz] = x_part
+        y_big[offset:offset+sz] = y_part
+        exp_big[offset:offset+sz] = x_part + y_part
+        offset += sz
+    out_big = add(x_big, y_big)
+    offset = 0
+    for sz in sizes:
+        if not torch.allclose(out_big[offset:offset+sz], exp_big[offset:offset+sz]):
+            raise AssertionError(f"multi-size test failed at size {sz}")
+        offset += sz
+
+def _test_noncontiguous():
+    """Non‑contiguous inputs should expose missing stride handling."""
+    base = torch.randn(64, 64, dtype=torch.float32)   # contiguous
+    x = base.transpose(0, 1)                         # non‑contiguous
+    y = base.transpose(0, 1).clone()                 # same layout as x
+    expected = x + y                                 # PyTorch respects strides
+    got = add(x, y)
+    # If the kernel ignores strides, this will fail → bug exposed.
+    assert torch.allclose(got, expected, equal_nan=True), (
+        "Kernel gave wrong result for non‑contiguous input (stride bug)"
+    )
+
+def _test_special_values():
+    """Check Inf, -Inf, NaN and signed zeros."""
+    x = torch.tensor([float('inf'), float('-inf'), float('nan'),
+                      0.0, -0.0, 1e30, -1e30], dtype=torch.float32)
+    y = torch.tensor([1.0, -2.0, 3.0, 4.0, 5.0, -1e30, 1e30],
+                     dtype=torch.float32)
+    expected = x + y
+    got = add(x, y)
+    assert torch.allclose(got, expected, equal_nan=True), (
+        "Special value handling failed"
+    )
+
+def _test_half_precision():
+    """FP16 path – ensure no silent promotion/mis‑cast."""
+    x = torch.randn(5000, dtype=torch.float16)
+    y = torch.randn(5000, dtype=torch.float16)
+    # FP16 has lower precision; relax tolerances slightly.
+    assert torch.allclose(add(x, y), x + y, atol=1e-3, rtol=1e-3), (
+        "FP16 addition mismatch"
+    )
+
+def _test_integer():
+    """Small integer tensors – verify no overflow in test range."""
+    x = torch.randint(-100, 100, (2000,), dtype=torch.int32)
+    y = torch.randint(-100, 100, (2000,), dtype=torch.int32)
+    assert torch.equal(add(x, y), x + y), (
+        "Integer addition mismatch"
+    )
+
+# Run the additional tests
+_test_multiple_sizes()
+_test_noncontiguous()
+_test_special_values()
+_test_half_precision()
+_test_integer()

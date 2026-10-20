@@ -1,0 +1,31 @@
+finish_reason=stop
+usage={'completion_tokens': 3405, 'prompt_tokens': 635, 'total_tokens': 4040, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3055, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 635}
+---
+
+
+```python
+def _assert_close(x, msg=""):
+    y = softmax(x)
+    y_ref = torch.softmax(x, dim=1)
+    assert torch.allclose(y, y_ref, atol=1e-5, rtol=1e-5), msg + f" shape {tuple(x.shape)}"
+
+# 1. Single‑element matrix
+_assert_close(torch.tensor([[2.5]]), "single element")
+
+# 2. Power‑of‑two width (tests tail‑free path)
+_assert_close(torch.randn(1, 1024), "power‑of‑two width")
+
+# 3. Non‑power‑of‑two width (tests tail handling via mask)
+_assert_close(torch.randn(1, 1023), "non‑power‑of‑two width")
+
+# 4. Many rows (stress‑tests loop over rows)
+_assert_close(torch.randn(1000, 100), "many rows")
+
+# 5. Mix of +inf, finite, -inf (exposes inf‑inf NaN issue in max‑subtraction)
+_inf_mix = torch.tensor([[float('inf'), 0.0, -float('inf')]])
+_assert_close(_inf_mix, "inf/-inf mix")
+
+# 6. Non‑contiguous input (checks that strides are used correctly)
+_x_nc = torch.randn(64, 64).t()  # shape (64,64) but transposed → non‑contiguous
+_assert_close(_x_nc, "non‑contiguous input")
+```

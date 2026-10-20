@@ -1,0 +1,112 @@
+{
+ "run_id": 1792422465,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "mask_lt_to_le",
+   "site": "lt#2",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 21435,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: Bug not detected: triton=tensor([[-1.0000,  1.0000]]), ref=tensor([[-1.0000,  1.0000]])). It must pass on the original.",
+    "Your test FAILS on the original kernel (AssertionError: Bug not detected: triton=tensor([[-1.2247,  0.0000,  1.2247]]), ref=tensor([[-1.2247,  0.0000,  1.2247]])). It must pass on the original.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 1780,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 1900,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 12148,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 10646,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5098,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 6489,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 7191,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "accepted"
+   ],
+   "test": "def _test_large_K_accumulator_error():\n    # Use a large inner dimension so that FP16 accumulation error exceeds the test tolerance.\n    M, N, K = 64, 64, 1024   # a: (64,1024), b: (1024,64), c: (64,64)\n    torch.manual_seed(2025)\n    a = torch.randn((M, K), dtype=torch.float16)\n    b = torch.randn((K, N), dtype=torch.float16)\n    ref = torch.matmul(a, b)          # reference uses FP32 accumulation\n    got = matmul(a, b)                # kernel under test (mutant uses FP16 accumulator)\n    # Same tolerance as the original sanity check.\n    assert torch.allclose(got, ref, atol=0.125, rtol=0), \\\n        f\"FP16 accumulator test failed for shape {M}x{N}x{K}\"\n\n# Append after the existing checks.\n_test_large_K_accumulator_error()\n",
+   "mutant_failure": "AssertionError: FP16 accumulator test failed for shape 64x64x1024"
+  }
+ ]
+}

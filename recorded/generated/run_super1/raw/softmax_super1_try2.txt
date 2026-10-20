@@ -1,0 +1,19 @@
+finish_reason=stop
+usage={'completion_tokens': 1653, 'prompt_tokens': 947, 'total_tokens': 2600, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1436, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 947}
+---
+
+
+```python
+# Additional test cases targeting boundary/tail handling and numerical extremes
+_extra_cases = [
+    (1, 1, 1.0),   # single element
+    (1, 2, 1e-4),  # tiny values, tail of 1 (BLOCK_SIZE=2)
+    (2, 1, 1e4),   # large values, single column
+    (32, 33, 1.0), # power‑of‑two rows, non‑power‑of‑two cols (tail 1)
+    (33, 32, 1.0), # non‑power‑of‑two rows, power‑of‑two cols
+    (64, 63, 1.0), # tail of 63 columns (BLOCK_SIZE=64)
+]
+
+for m, n, scale in _extra_cases:
+    check(m, n, scale)   # launches the kernel once per case
+```

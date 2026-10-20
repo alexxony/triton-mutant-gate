@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 1077, 'prompt_tokens': 1800, 'total_tokens': 2877, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1016, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1800}
+---
+
+
+EQUIVALENT – the mutant only changes the out‑of‑bounds fill value for **b** from 0 to 1, but the corresponding **a** entries are zero in those positions, so their product (and thus the accumulation) remains unchanged for all inputs.

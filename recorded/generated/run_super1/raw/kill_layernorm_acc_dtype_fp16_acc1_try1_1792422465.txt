@@ -1,0 +1,29 @@
+finish_reason=stop
+usage={'completion_tokens': 1958, 'prompt_tokens': 1344, 'total_tokens': 3302, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1577, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1344}
+---
+
+
+```python
+def test_large_variance_detects_float16_accum():
+    """Variance accumulation in float16 overflows to inf, causing a detectable output difference."""
+    torch.manual_seed(0)
+    N = 200_000                     # < 2M elements total
+    half = N // 2
+    # Construct a row with equal numbers of +300 and -300 → mean ≈ 0, variance = 300^2 = 90 000
+    x = torch.cat([
+        torch.full((half,), 300.0, dtype=torch.float32),
+        torch.full((half,), -300.0, dtype=torch.float32)
+    ]).view(1, N)                  # shape (1, N)
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    eps = 1e-5
+
+    y_triton = layer_norm(x, w, b, eps)
+    y_ref    = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+
+    # The original kernel (float32 accumulation) should match PyTorch within the test tolerance.
+    assert torch.allclose(y_triton, y_ref, atol=1e-2, rtol=0), \
+        "float32 accumulation failed to match reference"
+```
+EQUIVALENT
+The mutant changes the variance accumulator from float32 to float16, which alters the numerical result for inputs where the squared deviations exceed float16’s dynamic range (≈65504). Such inputs produce different outputs, so the kernels are not behaviorally equivalent.

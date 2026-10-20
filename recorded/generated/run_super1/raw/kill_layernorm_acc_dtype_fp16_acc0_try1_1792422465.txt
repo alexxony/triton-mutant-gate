@@ -1,0 +1,24 @@
+finish_reason=stop
+usage={'completion_tokens': 1357, 'prompt_tokens': 1336, 'total_tokens': 2693, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1076, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1336}
+---
+
+
+```python
+def test_large_constant_row(M, N, eps=1e-5, val=1e4):
+    """Layer norm of a large‑magnitude constant row should still return the bias.
+    The original kernel accumulates in float32 and can handle the sum,
+    while the mutant’s float16 accumulator overflows to Inf, producing NaNs."""
+    torch.manual_seed(0)
+    x = torch.full((M, N), val, dtype=torch.float32)
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    y = layer_norm(x, w, b, eps)
+    expected = b.expand_as(x)
+    # The original kernel meets the existing tolerance; the mutant will not.
+    assert torch.allclose(y, expected, atol=1e-2, rtol=0), \
+        f"large constant row mismatch M={M}, N={N}, val={val}, eps={eps}"
+
+# Exercise the mutant’s reduced‑precision accumulator with a value that
+# overflows float16 when summed over many elements.
+test_large_constant_row(1, 200_000)   # 1×200k < 2 M elements
+```

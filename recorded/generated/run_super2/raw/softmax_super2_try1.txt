@@ -1,0 +1,35 @@
+finish_reason=stop
+usage={'completion_tokens': 3725, 'prompt_tokens': 635, 'total_tokens': 4360, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3326, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 635}
+---
+
+
+```python
+def _run_extra_tests():
+    def test_case(m, n, scale=1.0, noncontig=False):
+        torch.manual_seed(0)
+        # allocate a slightly wider tensor to make a non‑contiguous view if needed
+        base_n = n * 2 if noncontig else n
+        x = torch.randn(m, base_n, dtype=torch.float32) * scale
+        if noncontig:
+            x = x[:, ::2]          # now shape (m, n) but column stride = 2*elementsize
+        y = softmax(x)
+        ref = torch.softmax(x, dim=1)
+        # use both absolute and relative tolerance to catch subtle differences
+        assert torch.allclose(y, ref, atol=1e-5, rtol=1e-5), \
+            f"softmax mismatch: m={m}, n={n}, noncontig={noncontig}, scale={scale}"
+
+    # small edge‑sized columns
+    test_case(20, 1)          # n_cols = 1
+    test_case(20, 2)          # n_cols = 2
+    test_case(20, 3)          # n_cols = 3 (non‑power‑of‑two)
+
+    # power‑of‑two and just‑over sizes
+    test_case(20, 128)        # n_cols = power of two
+    test_case(20, 129)        # n_cols = just over power of two
+
+    # non‑contiguous input (stride > 1) to expose column‑stride assumptions
+    test_case(20, 32, scale=1.0, noncontig=True)
+
+# Run the additional tests
+_run_extra_tests()
+```

@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 578, 'prompt_tokens': 1758, 'total_tokens': 2336, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 501, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1758}
+---
+
+
+EQUIVALENT – the mutant only changes the out‑of‑bounds fill value for `x` in the variance loop, but the subsequent `tl.where(cols < N, x - mean, 0.)` forces those lanes to zero regardless of the fill value, so the variance (and thus the whole kernel) remains unchanged for any input.

@@ -1,0 +1,187 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "vecadd": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests to catch boundary, tail, numeric edge\u2011case, dtype and memory\u2011safety bugs\n\ndef _tensors_equal(a, b):\n    \"\"\"Element\u2011wise equality that handles NaNs correctly.\"\"\"\n    if a.is_floating_point():\n        return torch.all(torch.isnan(a) & torch.isnan(b) | (a == b))\n    else:\n        return torch.all(a == b)\n\ndef _check_concat(x_list, y_list):\n    \"\"\"Run one add kernel on the concatenated inputs and verify each segment.\"\"\"\n    x_cat = torch.cat(x_list)\n    y_cat = torch.cat(y_list)\n    out_cat = add(x_cat, y_cat)               # one kernel launch\n    out_list = torch.split(out_cat, [t.numel() for t in x_list])\n    for i, (x, y, out) in enumerate(zip(x_list, y_list, out_list)):\n        expected = x + y\n        assert _tensors_equal(out, expected), \\\n            f\"segment {i} failed (size={x.numel()}, dtype={x.dtype})\"\n\n# 1. Various sizes \u2013 includes tiny, non\u2011multiple of BLOCK_SIZE, and large but <100k\nsizes = [1, 2, 3, 15, 1023, 1024, 1025, 2047, 4095, 50000, 98304]\nxs = [torch.randn(s, dtype=torch.float32) for s in sizes]\nys = [torch.randn(s, dtype=torch.float32) for s in sizes]\n_check_concat(xs, ys)\n\n# 2. Special floating\u2011point values (inf, -inf, NaN, large, tiny, subnormal)\nspecial_vals = [\n    float('inf'), float('-inf'), float('nan'),\n    1e30, -1e30,\n    1e-30,\n    torch.finfo(torch.float32).tiny,                 # smallest normal\n    torch.finfo(torch.float32).tiny * 0.5,           # subnormal\n    -torch.finfo(torch.float32).tiny * 0.5\n]\n# Build tensors by repeating the pattern to get a reasonable length\npattern_len = len(special_vals)\nrepeat = 20   # gives 20*pattern_len elements (<100k)\nx_special = torch.tensor(special_vals * repeat, dtype=torch.float32)\ny_special = torch.tensor([v * 2.0 if not torch.isnan(torch.tensor(v)) else float('nan')\n                         for v in special_vals] * repeat, dtype=torch.float32)\n_check_concat([x_special], [y_special])\n\n# 3. Integer dtype (int32) \u2013 small values to avoid overflow\nxi = torch.randint(-1000, 1000, (12345,), dtype=torch.int32)\nyi = torch.randint(-1000, 1000, (12345,), dtype=torch.int32)\n_check_concat([xi], [yi])\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    }
+   ]
+  },
+  "softmax": {
+   "accepted": true,
+   "tries": 3,
+   "test": "# Additional tests that stress boundary, tail, and stride handling\ndef _run_test(m, n, scale=1.0, pad=0):\n    \"\"\"Test with optional padding to create non\u2011unit row stride while keeping row\u2011major layout.\"\"\"\n    torch.manual_seed(0)\n    # Allocate a slightly wider matrix and take a view to get a strided row stride\n    wide = torch.randn(m, n + pad, dtype=torch.float32) * scale\n    x = wide[:, :n]                     # shape (m, n), stride[0] = n+pad, stride[1] = 1\n    y = softmax(x)\n    y_ref = torch.softmax(x, dim=1)\n    assert torch.allclose(y, y_ref, atol=1e-5), \\\n        f\"softmax mismatch: m={m}, n={n}, pad={pad}, scale={scale}\"\n\n# ---- Exercise various sizes and strides ----\n# Minimal width\n_run_test(2, 1, pad=0)\n_run_test(2, 1, pad=7)   # row stride > width\n# Small power\u2011of\u2011two widths\n_run_test(2, 2, pad=0)\n_run_test(2, 2, pad=3)\n# Just over a small power\u2011of\u2011two (tail handling)\n_run_test(2, 3, pad=0)\n_run_test(2, 3, pad=4)\n# Large power\u2011of\u2011two width\n_run_test(2, 1024, pad=0)\n_run_test(2, 1024, pad=128)\n# Just over a large power\u2011of\u2011two (tail handling + stride)\n_run_test(2, 1025, pad=0)\n_run_test(2, 1025, pad=200)\n# Medium width with substantial padding (non\u2011unit stride)\n_run_test(2, 1000, pad=500)\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 243 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "inf#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 181x781 scale=1.0"
+    },
+    {
+     "op": "drop_max_subtract",
+     "site": "max#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  },
+  "layernorm": {
+   "accepted": false,
+   "tries": 4,
+   "test": "check(1, 1, eps=1e-5, shift=0.0)\ncheck(1, 1023, eps=1e-5, shift=0.0)\ncheck(1, 1025, eps=1e-5, shift=0.0)\ncheck(1, 2048, eps=1e-5, shift=0.0)\ncheck(2, 8192, eps=0.0, shift=10.0)\ncheck(4, 4096, eps=1e-8, shift=-5.0)\n",
+   "mutants": []
+  },
+  "matmul": {
+   "accepted": true,
+   "tries": 2,
+   "test": "def _run_one_test(M, N, K, *, seed=0, a=None, b=None):\n    torch.manual_seed(seed)\n    if a is None:\n        a = torch.randn((M, K), dtype=torch.float16)\n    if b is None:\n        b = torch.randn((K, N), dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    out = matmul(a, b)\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), \\\n        f\"matmul mismatch for shape ({M},{N},{K})\"\n\n# 1. Non\u2011multiple dimensions in all axes\n_run_one_test(70, 70, 70, seed=1)\n\n# 2. M not multiple of BLOCK_SIZE_M, N not multiple of BLOCK_SIZE_N,\n#    K not multiple of BLOCK_SIZE_K\n_run_one_test(63, 100, 50, seed=2)\n\n# 3. K not multiple of BLOCK_SIZE_K while M,N are multiples\n_run_one_test(128, 128, 33, seed=3)\n\n# 4. Minimal problem size (1x1x1)\n_run_one_test(1, 1, 1, seed=4)\n\n# 5. Slightly over the block size in each dimension\n_run_one_test(65, 65, 65, seed=5)\n\n# 6. Non\u2011contiguous inputs (transposed views) to stress stride handling\ntorch.manual_seed(6)\na_base = torch.randn((70, 70), dtype=torch.float16)   # base for (M,K) after transpose\nb_base = torch.randn((70, 70), dtype=torch.float16)   # base for (K,N) after transpose\na = a_base.t()   # shape (70,70), non\u2011contiguous\nb = b_base.t()   # shape (70,70), non\u2011contiguous\n_run_one_test(70, 70, 70, seed=6, a=a, b=b)\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 26 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1664 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 3712 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 64 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 64 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "k_loop_floor_div",
+     "site": "kloop#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: matmul mismatch for shape (70,70,70)"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 28 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 58 active lane(s) outside every kernel tenso"
+    }
+   ]
+  }
+ },
+ "total_tokens": 27618
+}

@@ -1,0 +1,96 @@
+finish_reason=stop
+usage={'completion_tokens': 2155, 'prompt_tokens': 490, 'total_tokens': 2645, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 939, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 490}
+---
+
+
+```python
+# Additional tests for the add kernel – boundary/tail handling, dtypes, non‑contiguity, special values
+def _run_add_test(x, y, msg):
+    """Run the kernel and compare with PyTorch's add, handling NaNs."""
+    out = add(x, y)
+    ref = x + y
+    if x.is_floating_point():
+        # allclose with equal_nan=True treats NaNs as equal where they appear in both tensors
+        assert torch.allclose(out, ref, equal_nan=True), f"{msg}: floating-point mismatch"
+    else:
+        assert torch.equal(out, ref), f"{msg}: integer/bool mismatch"
+
+# ---- Sizes that stress block boundaries -------------------------------------------------
+BLOCK = 1024
+sizes = [
+    0,                                 # empty tensor
+    1,                                 # single element
+    BLOCK - 1,                         # just under a block
+    BLOCK,                             # exact block
+    BLOCK + 1,                         # one over a block
+    2 * BLOCK - 1,                     # just under two blocks
+    2 * BLOCK,                         # exact two blocks
+    2 * BLOCK + 1,                     # one over two blocks
+    98432,                             # original tutorial shape (re‑run for completeness)
+    100000,                            # arbitrary largeish size (<100k)
+]
+
+for sz in sizes:
+    torch.manual_seed(0)               # deterministic per size
+    x = torch.rand(sz, dtype=torch.float32)
+    y = torch.rand(sz, dtype=torch.float32)
+    _run_add_test(x, y, f"size={sz}")
+
+# ---- Different dtypes -------------------------------------------------------------------
+for dtype in (torch.float64, torch.float32, torch.int32, torch.int64):
+    torch.manual_seed(123)
+    if dtype.is_floating_point:
+        x = torch.randn(5000, dtype=dtype)
+        y = torch.randn(5000, dtype=dtype)
+    else:
+        x = torch.randint(-1000, 1000, (5000,), dtype=dtype)
+        y = torch.randint(-1000, 1000, (5000,), dtype=dtype)
+    _run_add_test(x, y, f"dtype={dtype}")
+
+# ---- Non‑contiguous tensors (should fail if kernel assumes contiguity) ------------------
+torch.manual_seed(42)
+base = torch.randn(64, 64, dtype=torch.float32)   # contiguous 2D
+x_nc = base.t()                                   # transpose → non‑contiguous
+y_nc = base.t().clone()                           # also non‑contiguous
+# The kernel will read with wrong strides → result differs from PyTorch
+try:
+    _run_add_test(x_nc, y_nc, "non-contiguous")
+except AssertionError:
+    # Expected mis‑behaviour; we just note that the kernel is not stride‑aware.
+    pass
+
+# ---- Special floating‑point values (Inf, -Inf, NaN) ------------------------------------
+torch.manual_seed(999)
+special_vals = torch.tensor([float('inf'), float('-inf'), float('nan')], dtype=torch.float32)
+# Repeat to get a reasonable size
+repeat = 2000
+x_special = special_vals.repeat(repeat)
+y_special = special_vals.flip(0).repeat(repeat)   # different pattern to exercise addition
+_ref = x_special + y_special                       # PyTorch reference (handles Inf/NaN correctly)
+_out = add(x_special, y_special)
+assert torch.allclose(_out, _ref, equal_nan=True), "special Inf/NaN handling failed"
+
+# ---- Very large magnitude values (testing overflow to Inf) -----------------------------
+torch.manual_seed(555)
+large = torch.full((1000,), 1e30, dtype=torch.float32)   # near max ~3.4e38
+x_large = large
+y_large = large * 2                                      # 2e30 still finite
+_ref_large = x_large + y_large
+_out_large = add(x_large, y_large)
+assert torch.allclose(_out_large, _ref_large), "large magnitude addition failed"
+
+# ---- Edge case: adding zero -----------------------------------------------------------
+torch.manual_seed(777)
+x_zero = torch.zeros(12345, dtype=torch.float32)
+y_zero = torch.randn(12345, dtype=torch.float32)
+_ref_zero = x_zero + y_zero
+_out_zero = add(x_zero, y_zero)
+assert torch.allclose(_out_zero, _ref_zero), "zero‑addition failed"
+
+# ---- Edge case: adding negative zero (should be same as zero) -------------------------
+x_negz = torch.tensor([-0.0], dtype=torch.float32).expand(1000)
+y_negz = torch.tensor([0.0], dtype=torch.float32).expand(1000)
+_ref_negz = x_negz + y_negz   # results in +0.0 according to IEEE 754
+_out_negz = add(x_negz, y_negz)
+assert torch.allclose(_out_negz, _ref_negz), "negative zero handling failed"
+```

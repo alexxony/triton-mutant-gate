@@ -1,0 +1,27 @@
+papers fetched 43
+parsed 43 relevant 25 quote_rejected 2 tokens 52398
+- 2025-03-11 Mutation Testing via Iterative Large Language Model-Driven Scientific Debugging | http://arxiv.org/abs/2503.08182v1 | llm_test_generation,mutation_testing,equivalent_mutants
+- 2026-06-03 STMutants: A Mutation Testing Dataset for Structured Text Programs in Industrial Automatio | http://arxiv.org/abs/2606.05499v1 | llm_test_generation,mutation_testing,equivalent_mutants
+- 2025-06-19 AI-Driven Tools in Modern Software Quality Assurance: An Assessment of Benefits, Challenge | http://arxiv.org/abs/2506.16586v1 | llm_test_generation,mutation_testing,executes_to_verify
+- 2025-01-22 Mutation-Guided LLM-based Test Generation at Meta | http://arxiv.org/abs/2501.12862v1 | llm_test_generation,mutation_testing,equivalent_mutants
+- 2026-09-24 Beyond Rule-Based Mutation Testing: Test-Aware Mutant Generation Using Large Language Mode | http://arxiv.org/abs/2609.35841v1 | llm_test_generation,mutation_testing,equivalent_mutants
+- 2025-07-20 StaAgent: An Agentic Framework for Testing Static Analyzers | http://arxiv.org/abs/2507.15892v1 | llm_test_generation,mutation_testing,equivalent_mutants
+- 2026-09-02 Measuring the Checker: Mutation Analysis for GPU-Kernel Benchmark Oracles | http://arxiv.org/abs/2609.22220v1 | mutation_testing,gpu_or_kernel,executes_to_verify
+- 2023-08-31 Effective Test Generation Using Pre-trained Large Language Models and Mutation Testing | http://arxiv.org/abs/2308.16557v1 | llm_test_generation,mutation_testing
+- 2026-09-08 How effective are traditional test criteria at detecting bugs in large language models gen | http://arxiv.org/abs/2609.09315v1 | llm_test_generation,mutation_testing
+- 2025-05-08 PRIMG : Efficient LLM-driven Test Generation Using Mutant Prioritization | http://arxiv.org/abs/2505.05584v1 | llm_test_generation,mutation_testing
+- 2025-06-03 Mutation-Guided Unit Test Generation with a Large Language Model | http://arxiv.org/abs/2506.02954v8 | llm_test_generation,mutation_testing
+- 2026-07-03 TATG: Tracking-Aware Testing Objective for LLM-based Test Generation | http://arxiv.org/abs/2607.03194v1 | llm_test_generation,mutation_testing
+- 2026-02-08 Test vs Mutant: Adversarial LLM Agents for Robust Unit Test Generation | http://arxiv.org/abs/2602.08146v3 | llm_test_generation,mutation_testing
+- 2025-07-24 YATE: The Role of Test Repair in LLM-Based Unit Test Generation | http://arxiv.org/abs/2507.18316v1 | llm_test_generation,mutation_testing
+- 2026-04-21 Improving LLM-Driven Test Generation by Learning from Mocking Information | http://arxiv.org/abs/2604.19315v1 | llm_test_generation,mutation_testing
+- 2024-08-03 Large Language Models for Equivalent Mutant Detection: How Far Are We? | http://arxiv.org/abs/2408.01760v1 | mutation_testing,equivalent_mutants
+- 2024-06-14 A Comprehensive Study on Large Language Models for Mutation Testing | http://arxiv.org/abs/2406.09843v5 | mutation_testing,equivalent_mutants
+- 2026-02-07 Surprisal-Guided Selection: Compute-Optimal Test-Time Strategies for Execution-Grounded Co | http://arxiv.org/abs/2602.07670v1 | gpu_or_kernel,executes_to_verify
+- 2026-06-18 The Correctness Illusion in LLM-Generated GPU Kernels | http://arxiv.org/abs/2606.20128v2 | gpu_or_kernel,executes_to_verify
+- 2025-06-10 CUDA-LLM: LLMs Can Write Efficient CUDA Kernels | http://arxiv.org/abs/2506.09092v1 | gpu_or_kernel,executes_to_verify
+- 2026-09-14 Exo-GPU: Safe, Imperative, User-schedulable Programming for Tensor Cores | http://arxiv.org/abs/2609.16389v1 | gpu_or_kernel
+- 2025-02-14 KernelBench: Can LLMs Write Efficient GPU Kernels? | http://arxiv.org/abs/2502.10517v1 | gpu_or_kernel
+- 2025-11-25 QiMeng-Kernel: Macro-Thinking Micro-Coding Paradigm for LLM-Based High-Performance GPU Ker | http://arxiv.org/abs/2511.20100v1 | gpu_or_kernel
+- 2025-11-24 KernelBand: Steering LLM-based Kernel Optimization via Hardware-Aware Multi-Armed Bandits | http://arxiv.org/abs/2511.18868v2 | gpu_or_kernel
+- 2025-09-09 Astra: A Multi-Agent System for GPU Kernel Performance Optimization | http://arxiv.org/abs/2509.07506v2 | gpu_or_kernel

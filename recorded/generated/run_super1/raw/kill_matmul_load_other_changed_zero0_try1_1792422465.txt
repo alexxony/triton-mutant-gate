@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 3225, 'prompt_tokens': 1873, 'total_tokens': 5098, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3167, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1873}
+---
+
+
+EQUIVALENT
+The mask used for loading A and B is the same, so any out‑of‑bounds element from A (where the mutant uses 1 instead of 0) is always multiplied by a zero from B, leaving the result unchanged.

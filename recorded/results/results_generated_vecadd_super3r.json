@@ -1,0 +1,41 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "vecadd": {
+   "accepted": true,
+   "tries": 1,
+   "test": "def _test_size(sz):\n    torch.manual_seed(0)\n    x = torch.rand(sz, dtype=torch.float32)\n    y = torch.rand(sz, dtype=torch.float32)\n    assert torch.allclose(add(x, y), x + y), f\"size={sz} failed\"\n\n# zero-size tensor\n_test_size(0)\n# single-element tensor\n_test_size(1)\n# just under the block size (1024)\n_test_size(1023)\n# exact block size\n_test_size(1024)\n# one element over the block size\n_test_size(1025)\n# non-contiguous tensors (transpose)\ntorch.manual_seed(42)\nx = torch.randn(64, 64)\ny = torch.randn(64, 64)\nxt, yt = x.t(), y.t()\nassert torch.allclose(add(xt, yt), xt + yt), \"non-contiguous transpose failed\"\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    }
+   ]
+  }
+ },
+ "total_tokens": 2497
+}

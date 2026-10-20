@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 575, 'prompt_tokens': 1501, 'total_tokens': 2076, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 512, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1501}
+---
+
+
+EQUIVALENT  
+The mutation only changes the value loaded for out‑of‑bounds columns, but those values are immediately zeroed by the subsequent `tl.where(cols < N, …, 0.)`, so they never contribute to the variance computation or the final output.

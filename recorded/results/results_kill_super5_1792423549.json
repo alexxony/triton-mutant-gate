@@ -1,0 +1,58 @@
+{
+ "run_id": 1792423549,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2052,
+   "log": [
+    "accepted"
+   ],
+   "test": "def test_large_values():\n    \"\"\"Test with large input values that cause overflow if max subtraction is omitted.\"\"\"\n    torch.manual_seed(0)\n    # Scale large enough that raw values exceed ~710 (exp overflow in float64)\n    x = torch.randn(4, 4, dtype=torch.float32) * 1e4   # typical values ~ few thousand\n    y = softmax(x)\n    y_ref = torch.softmax(x, dim=1)\n    # The original kernel (with max subtraction) should match the reference;\n    # the mutant (without subtraction) will produce Inf/NaN and fail this assert.\n    assert torch.allclose(y, y_ref, atol=1e-5), (\n        f\"softmax mismatch on large values: max abs diff = {(y - y_ref).abs().max().item()}\"\n    )\n\n# Append the new test after the existing sanity checks\ntest_large_values()\n",
+   "mutant_failure": "AssertionError: softmax mismatch on large values: max abs diff = nan"
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2821,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3204,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3014,
+   "log": [
+    "accepted"
+   ],
+   "test": "# Additional test that distinguishes the mutant (fp16 accumulator) from the original (fp32 accumulator)\nM, N, K = 64, 64, 1024          # problem size well under the 2M-element limit\ntorch.manual_seed(123)          # deterministic input\na = torch.randn((M, K), dtype=torch.float16)\nb = torch.randn((K, N), dtype=torch.float16)\nref = torch.matmul(a, b)        # high\u2011precision reference (torch uses fp32 accumulation)\nout = matmul(a, b)              # Triton kernel under test\n# The original kernel (fp32 accumulator) should meet the 0.125 absolute tolerance,\n# whereas the mutant (fp16 accumulator) will exceed it due to reduced\u2011precision accumulation.\nassert torch.allclose(out, ref, atol=0.125, rtol=0), \\\n    f\"Accumulator precision test failed for shape ({M},{N},{K})\"\n",
+   "mutant_failure": "AssertionError: Accumulator precision test failed for shape (64,64,1024)"
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+ "run_id": 1792422750,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5933,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4003,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

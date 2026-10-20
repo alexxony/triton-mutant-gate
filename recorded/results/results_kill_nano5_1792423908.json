@@ -1,0 +1,95 @@
+{
+ "run_id": 1792423908,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2387,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2533,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 21241,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: mutant should fail on this case). It must pass on the original.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test FAILS on the original kernel (AssertionError: mutant should differ from reference on this input). It must pass on the original."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 11218,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 9269,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4942,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 1,
+   "tokens": 27687,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your code has a SyntaxError: '[' was never closed at line 8: b = torch.tensor([[0.2], [0.",
+    "Your test FAILS on the original kernel (ImportError: cannot import name 'matmul' from 'triton' (/usr/local/lib/python3.12/site-packages/triton/__init__.py)). It must pass on the original."
+   ]
+  }
+ ]
+}

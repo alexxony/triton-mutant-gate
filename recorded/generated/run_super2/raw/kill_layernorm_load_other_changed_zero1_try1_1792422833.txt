@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 522, 'prompt_tokens': 1634, 'total_tokens': 2156, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 468, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1634}
+---
+
+
+EQUIVALENT – the mutant only changes the out‑of‑bounds load value, but the subsequent `tl.where` unconditionally zeroes those lanes before they contribute to the variance, so the computation yields identical results for all inputs.

@@ -1,0 +1,45 @@
+{
+ "run_id": 1792423529,
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "results": [
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4233,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5283,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 18229,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "accepted"
+   ],
+   "test": "# Test fp16 vs fp32 accumulation: large base value where fp16 ULP=2.0, many tiny additions\n# that sum to ~2.0 in fp32 (rounding to next fp16 bin) but vanish in fp16 accumulation.\ntorch.manual_seed(0)\nM, N, K = 1, 1, 20000\na = torch.zeros((M, K), dtype=torch.float16)\nb = torch.zeros((K, N), dtype=torch.float16)\na[0, 0] = 2048.0          # 2^11, fp16 ULP = 2.0 at this magnitude\na[0, 1:] = 0.01           # 0.01 * 0.01 = 1e-4 per element\nb[0, 0] = 1.0\nb[1:, 0] = 0.01\nref = torch.matmul(a, b)  # fp32 acc: 2048 + 19999*1e-4 = 2049.9999 -> fp16 rounds to 2050.0\nout = matmul(a, b)        # original: 2050.0; mutant (fp16 acc): 2048.0\nassert torch.allclose(out, ref, atol=0.125, rtol=0), f\"accumulation precision mismatch {out.item()} vs {ref.item()}\"\n",
+   "mutant_failure": "AssertionError: accumulation precision mismatch 2048.0 vs 2050.0"
+  }
+ ]
+}

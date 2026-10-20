@@ -1,0 +1,35 @@
+# Additional tests to stress boundary/tail handling, non‑contiguous layout and extreme values
+
+def _check_shape(M, N, K, *, seed=0):
+    torch.manual_seed(seed)
+    a = torch.randn((M, K), dtype=torch.float16)
+    b = torch.randn((K, N), dtype=torch.float16)
+    ref = torch.matmul(a, b)
+    assert torch.allclose(matmul(a, b), ref, atol=0.125, rtol=0), \
+        f"mismatch for shape {M}x{N}x{K}"
+
+# 1. Dimensions not multiples of BLOCK_SIZE_* (64,64,32)
+_check_shape(100, 100, 100)   # M,N,K all >64 but not divisible
+_check_shape(65, 65, 65)      # just over the block size
+_check_shape(128, 32, 128)    # N small and not a multiple of 64
+
+# 2. Non‑contiguous inputs (transposed matrices) – exercises stride handling
+def _check_noncontig():
+    torch.manual_seed(42)
+    a = torch.randn((64, 64), dtype=torch.float16).t()  # stride[0]=1, stride[1]=64
+    b = torch.randn((64, 64), dtype=torch.float16).t()
+    ref = torch.matmul(a, b)
+    assert torch.allclose(matmul(a, b), ref, atol=0.125, rtol=0), \
+        "non‑contiguous matmul failed"
+_check_noncontig()
+
+# 3. Extreme float16 values (max/min finite) – checks for overflow/underflow in accumulation
+def _check_extremes():
+    torch.manual_seed(123)
+    # Create matrices with known large values; scale down to avoid inf in reference
+    a = torch.full((32, 32), 65500.0, dtype=torch.float16)  # near max float16
+    b = torch.full((32, 32), 1.0, dtype=torch.float16)
+    ref = torch.matmul(a, b)  # expected ~65500*32 per element
+    assert torch.allclose(matmul(a, b), ref, atol=100.0, rtol=0), \
+        "extreme value matmul failed"
+_check_extremes()

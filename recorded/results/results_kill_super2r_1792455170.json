@@ -1,0 +1,44 @@
+{
+ "run_id": 1792455170,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3536,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4061,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 14190,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

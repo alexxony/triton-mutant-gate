@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 1659, 'prompt_tokens': 2596, 'total_tokens': 4255, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1581, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2596}
+---
+
+
+EQUIVALENT
+The mutant only alters the value used for out‑of‑bounds loads of A (from 0.0 to 1.0), but those positions are always multiplied by the corresponding out‑of‑bounds loads of B, which are zero, so the accumulator—and thus the final output—is unchanged for any input.

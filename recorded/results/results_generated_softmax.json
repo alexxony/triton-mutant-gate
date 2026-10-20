@@ -1,0 +1,48 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "softmax": {
+   "accepted": true,
+   "tries": 2,
+   "test": "import torch\n\ndef _check(m, n, scale=1.0, equal_nan=False):\n    torch.manual_seed(0)\n    x = torch.randn(m, n) * scale\n    y = softmax(x)\n    y_torch = torch.softmax(x, axis=1)\n    if equal_nan:\n        assert torch.allclose(y, y_torch, equal_nan=True), \\\n            f\"mismatch (equal_nan) {m}x{n} scale={scale}\"\n    else:\n        assert torch.allclose(y, y_torch, atol=1e-5), \\\n            f\"mismatch {m}x{n} scale={scale}\"\n\n# 1. Single column \u2013 tests tail handling when n_cols == 1\n_check(128, 1)\n\n# 2. Single row \u2013 tests boundary when only one row is processed\n_check(1, 256)\n\n# 3. Non\u2011power\u2011of\u2011two column count \u2013 exposes masking/tail logic\n_check(60, 57)   # 57 is not a power of two\n\n# 4. Large non\u2011power\u2011of\u2011two column count \u2013 stress test for padding\n_check(8, 1023)  # 1023 < next power of two (1024)\n\n# 5. Input filled with -inf \u2013 checks handling of infinities in max/exp\ndef _check_inf(m, n):\n    torch.manual_seed(0)\n    x = torch.full((m, n), -float('inf'))\n    y = softmax(x)\n    y_torch = torch.softmax(x, axis=1)\n    assert torch.allclose(y, y_torch, equal_nan=True), \\\n        f\"-inf mismatch {m}x{n}\"\n_check_inf(32, 32)\n\n# 6. Input filled with NaN \u2013 checks propagation of NaN through max/exp/sum\ndef _check_nan(m, n):\n    torch.manual_seed(0)\n    x = torch.full((m, n), float('nan'))\n    y = softmax(x)\n    y_torch = torch.softmax(x, axis=1)\n    assert torch.allclose(y, y_torch, equal_nan=True), \\\n        f\"nan mismatch {m}x{n}\"\n_check_nan(32, 32)\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 15 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "inf#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 181x781 scale=1.0"
+    },
+    {
+     "op": "drop_max_subtract",
+     "site": "max#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": "  output = op(lhs.data, rhs.data)"
+    }
+   ]
+  }
+ },
+ "total_tokens": 5896
+}

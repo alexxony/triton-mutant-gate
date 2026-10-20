@@ -1,0 +1,19 @@
+finish_reason=stop
+usage={'completion_tokens': 315, 'prompt_tokens': 1197, 'total_tokens': 1512, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 150, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1197}
+---
+
+
+```python
+# Additional targeted tests – reuse the existing `check` helper
+_extra_shapes = [
+    (1, 1),      # minimal matrix
+    (1, 2),      # BLOCK_SIZE=2, no tail
+    (2, 1),      # single column, multiple rows
+    (2, 3),      # BLOCK_SIZE=4 → tail of 1
+    (4, 5),      # BLOCK_SIZE=8 → tail of 3
+    (8, 15),     # BLOCK_SIZE=16 → tail of 15
+]
+
+for m, n in _extra_shapes:
+    check(m, n, 1.0)   # each call launches the kernel once
+```

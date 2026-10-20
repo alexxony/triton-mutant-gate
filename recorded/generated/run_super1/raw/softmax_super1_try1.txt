@@ -1,0 +1,27 @@
+finish_reason=stop
+usage={'completion_tokens': 4508, 'prompt_tokens': 635, 'total_tokens': 5143, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 4229, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 635}
+---
+
+
+```python
+def _extra_test_cases():
+    # Each tuple: (rows, cols, scale)
+    # Chosen to stress boundary/tail handling, small and moderate sizes,
+    # and extreme scales while keeping total elements tiny.
+    return [
+        (2, 1, 1.0),   # minimal column count
+        (2, 2, 1.0),   # power‑of‑two columns, no tail
+        (2, 3, 1.0),   # just above power‑of‑two → tail of 1
+        (2, 4, 1.0),   # power‑of‑two columns, no tail
+        (2, 9, 1e-4),  # tail of 7 with very small values (tests underflow in exp)
+        (2, 17, 1e4),  # tail of 15 with very large values (tests overflow safety via max-subtraction)
+    ]
+
+def _run_extra_tests():
+    for m, n, scale in _extra_test_cases():
+        # Reuse the existing `check` helper which compares against torch.softmax
+        check(m, n, scale)
+
+# Run the additional tests immediately after the existing sanity checks
+_run_extra_tests()
+```

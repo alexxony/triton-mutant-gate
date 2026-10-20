@@ -1,0 +1,35 @@
+finish_reason=stop
+usage={'completion_tokens': 4742, 'prompt_tokens': 635, 'total_tokens': 5377, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 4382, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 635}
+---
+
+
+```python
+# Additional targeted tests to catch boundary, tail, and stride-related bugs
+def check_mn(m, n, scale=1.0, contiguous=True):
+    """Run a single softmax correctness test with optional non‑contiguous input."""
+    torch.manual_seed(0)
+    if contiguous:
+        x = torch.randn(m, n, dtype=torch.float32) * scale
+    else:
+        # Produce a non‑contiguous view by transposing a larger tensor
+        base = torch.randn(n, m, dtype=torch.float32) * scale
+        x = base.t()  # shape (m, n), strides swapped
+    y = softmax(x)
+    y_ref = torch.softmax(x, dim=1)
+    assert torch.allclose(y, y_ref, atol=1e-5),
+        f"softmax mismatch: m={m}, n={n}, scale={scale}, contiguous={contiguous}"
+
+# ---- Exercise edge cases ----
+# Minimum width
+check_mn(2, 1, contiguous=True)
+# Small power‑of‑two width
+check_mn(2, 2, contiguous=True)
+# Just over a small power‑of‑two (tail handling)
+check_mn(2, 3, contiguous=True)
+# Large power‑of‑two width
+check_mn(2, 1024, contiguous=True)
+# Just over a large power‑of‑two (tail handling)
+check_mn(2, 1025, contiguous=True)
+# Medium width, non‑contiguous to test stride handling
+check_mn(2, 1000, contiguous=False)
+```

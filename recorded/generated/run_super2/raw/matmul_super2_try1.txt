@@ -1,0 +1,27 @@
+finish_reason=stop
+usage={'completion_tokens': 2487, 'prompt_tokens': 1025, 'total_tokens': 3512, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2210, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1025}
+---
+
+
+```python
+def _additional_tests():
+    # Shapes chosen to stress boundary/tail handling:
+    # - small tensors (expose modulo wrapping in A/B loads)
+    # - dimensions not multiples of BLOCK_SIZE_* (cause out‑of‑bounds reads)
+    # - varied aspect ratios (test different stride patterns)
+    test_shapes = [
+        (1, 1, 1),          # tiny – modulo wraps heavily
+        (10, 10, 10),       # still < BLOCK_SIZE, checks wrap logic
+        (33, 33, 33),       # odd size, not a multiple of 64
+        (65, 65, 30),       # M,N > BLOCK_SIZE but not multiples; K small
+        (80, 40, 20),       # rectangular, M not multiple of 64
+        (90, 30, 30),       # another rectangular case
+    ]
+    for M, N, K in test_shapes:
+        # Reuse the existing check helper; it will launch the kernel once per call.
+        check(M, N, K)
+
+
+# Run the additional tests right after the existing sanity checks.
+_additional_tests()
+```

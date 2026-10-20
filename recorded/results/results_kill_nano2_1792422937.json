@@ -1,0 +1,112 @@
+{
+ "run_id": 1792422937,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 12001,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5805,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_eps",
+   "site": "eps#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 6031,
+   "log": [
+    "accepted"
+   ],
+   "test": "# Distinguishing test: low\u2011variance input where eps matters\ndef _run_one_distinguish(M, N, eps=1e-5, shift=0.0, dtype=torch.float32, atol=1e-3):\n    torch.manual_seed(0)\n    # tiny random noise \u2192 extremely small variance after centering\n    x = torch.full((M, N), 0.0, dtype=dtype) + torch.randn(M, N, dtype=dtype) * 1e-6\n    w = torch.rand(N, dtype=dtype)\n    b = torch.rand(N, dtype=dtype)\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    out = layer_norm(x, w, b, eps)\n    # original kernel adds eps before sqrt, mutant does not \u2192 output differs noticeably\n    assert torch.allclose(out, ref, atol=atol, rtol=atol), f\"distinguish fail {M}x{N}\"\n\n# run the case (M=1, N=8) \u2013 well under 2\u202fM elements and only one launch\n_run_one_distinguish(1, 8, eps=1e-5, shift=0.0, dtype=torch.float32)\n",
+   "mutant_failure": "AssertionError: distinguish fail 1x8"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 17992,
+   "log": [
+    "Your test FAILS on the original kernel (triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')). It must pass on the original.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 20284,
+   "log": [
+    "Your test FAILS on the original kernel (ValueError: not enough values to unpack (expected 2, got 1)). It must pass on the original.",
+    "Your test FAILS on the original kernel (ValueError: not enough values to unpack (expected 2, got 1)). It must pass on the original.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 13525,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 7248,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 26837,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  }
+ ]
+}

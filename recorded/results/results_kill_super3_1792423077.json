@@ -1,0 +1,108 @@
+{
+ "run_id": 1792423077,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 1807,
+   "log": [
+    "accepted"
+   ],
+   "test": "def _test_large_values():\n    # Input with a large value that would cause overflow in exp without subtracting the max\n    torch.manual_seed(0)\n    x = torch.tensor([[1000.0, 0.0, 0.0, 0.0]], dtype=torch.float32)  # shape (1,4)\n    y = softmax(x)\n    expected = torch.softmax(x, dim=1)\n    # The original kernel (with max subtraction) should match PyTorch softmax closely\n    assert torch.allclose(y, expected, atol=1e-5), \\\n        f\"largish values test failed: got {y}, expected {expected}\"\n\n# Append the new test after the existing sanity checks\n_test_large_values()\n",
+   "mutant_failure": "AssertionError: largish values test failed: got tensor([[nan, 0., 0., 0.]]), expected tensor([[1., 0., 0., 0.]])"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2076,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2353,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 9217,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 7173,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2855,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2971,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3463,
+   "log": [
+    "accepted"
+   ],
+   "test": "def test_large_inner_dim():\n    # Amplify accumulation error by using a large K while keeping output modest.\n    M, N, K = 64, 64, 2048\n    torch.manual_seed(2025)\n    a = torch.randn((M, K), dtype=torch.float16)\n    b = torch.randn((K, N), dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    got = matmul(a, b)\n    # Original kernel (FP32 accumulator) stays within tolerance;\n    # mutant (FP16 accumulator) exceeds it for this K.\n    assert torch.allclose(got, ref, atol=0.125, rtol=0), (\n        f\"FAIL on mutant for shape ({M},{N},{K}): \"\n        f\"max diff = {(got - ref).abs().max().item()}\"\n    )\n\n# Append the new test after the existing sanity checks.\ntest_large_inner_dim()\n",
+   "mutant_failure": "AssertionError: FAIL on mutant for shape (64,64,2048): max diff = 0.375"
+  }
+ ]
+}

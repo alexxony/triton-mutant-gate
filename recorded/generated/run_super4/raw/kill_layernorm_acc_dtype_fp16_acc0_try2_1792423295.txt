@@ -1,0 +1,28 @@
+finish_reason=stop
+usage={'completion_tokens': 840, 'prompt_tokens': 2080, 'total_tokens': 2920, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 569, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2080}
+---
+
+
+```python
+def _test_mean_precision():
+    """Detect the loss of precision when the mean accumulator is reduced to float16."""
+    M, N = 1, 100_000          # < 2 M elements
+    eps = 1e-5
+    shift = 1.0e3              # large values to magnify rounding error
+    torch.manual_seed(0)
+    x = -2.3 + 0.5 * torch.randn(M, N, dtype=torch.float32) + shift
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+
+    # Reference using PyTorch (float32 throughout)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    # Triton kernel under test
+    y   = layer_norm(x, w, b, eps)
+
+    # Original kernel should agree with the reference within the existing tolerance.
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        "LayerNorm output mismatch – possible behavioural difference"
+
+# Append the new test after the existing sanity checks
+_test_mean_precision()
+```

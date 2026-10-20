@@ -1,0 +1,41 @@
+# Additional tests to catch boundary, tail, and numerical edge‑cases
+
+def _run_check(sz):
+    """Reuse the existing check helper for a given size."""
+    check(sz)
+
+# --- Boundary / tail handling -------------------------------------------------
+# Test very small, exact block, just over block, and just under multiple sizes.
+_run_check(1)          # single element
+_run_check(1024)       # exactly one block
+_run_check(1025)       # one block + one tail element
+_run_check(2047)       # two blocks minus one element (tests tail mask)
+
+# --- Numerical edge cases (NaN, Inf, subnormals) ------------------------------
+def _test_special_values():
+    n = 1024                     # keep tensor size modest
+    x = torch.ones(n, dtype=torch.float32)
+    y = torch.ones(n, dtype=torch.float32)
+
+    # Insert special patterns at known indices
+    x[0] = float('nan');   y[0] = 1.0                     # NaN + finite -> NaN
+    x[1] = float('inf');   y[1] = -float('inf')           # Inf + (-Inf) -> NaN
+    x[2] = float('inf');   y[2] = 5.0                     # Inf + finite -> Inf
+    x[3] = -float('inf');  y[3] = 5.0                     # -Inf + finite -> -Inf
+    x[4] = 0.0;            y[4] = 0.0                     # zero + zero
+    tiny = torch.finfo(torch.float32).tiny
+    x[5] = tiny;           y[5] = tiny                    # subnormal + subnormal
+
+    z = add(x, y)
+    expected = x + y                     # PyTorch reference handling
+    assert torch.allclose(z, expected, equal_nan=True), \
+        "special value propagation failed"
+
+    # --- dtype precision check (float16) ------------------------------------
+    x16 = torch.randn(n, dtype=torch.float16)
+    y16 = torch.randn(n, dtype=torch.float16)
+    z16 = add(x16, y16)
+    assert torch.allclose(z16, x16 + y16, atol=1e-3, rtol=1e-3), \
+        "float16 addition mismatch"
+
+_test_special_values()

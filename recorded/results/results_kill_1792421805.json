@@ -1,0 +1,109 @@
+{
+ "run_id": 1792421805,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2480,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3078,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 11855,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 6803,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3253,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2839,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 1,
+   "tokens": 15041,
+   "log": [
+    "Your code has a SyntaxError: invalid syntax at line 6: // the correct value (computed with fp32 accumulation in the original).",
+    "Your test FAILS on the original kernel (AssertionError: fp16 accumulator drift not detected: out=8.0, ref=8.0). It must pass on the original.",
+    "Your test FAILS on the original kernel (AssertionError: FP16 accumulator saturation not detected: out=0.152587890625, ref=0.152587890625). It must pass on the original."
+   ]
+  },
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2289,
+   "log": [
+    "accepted"
+   ],
+   "test": "def _check_large(m, n, val):\n    torch.manual_seed(0)\n    x = torch.full((m, n), val, dtype=torch.float32)\n    y = softmax(x)\n    y_torch = torch.softmax(x, axis=1)\n    # Use a loose tolerance because the mutant may produce NaNs/infs\n    assert torch.allclose(y, y_torch, atol=1e-5), \\\n        f\"large-value mismatch {m}x{n} val={val}\"\n\n# Test with a value large enough to cause overflow in the mutant's exp\n_check_large(1, 2, 1000.0)\n",
+   "mutant_failure": "AssertionError: large-value mismatch 1x2 val=1000.0"
+  }
+ ]
+}

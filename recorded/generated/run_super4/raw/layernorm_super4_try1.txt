@@ -1,0 +1,59 @@
+finish_reason=stop
+usage={'completion_tokens': 3425, 'prompt_tokens': 934, 'total_tokens': 4359, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2761, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 934}
+---
+
+
+```python
+def _test_non_multiple_block():
+    """N not divisible by BLOCK_SIZE=1024 triggers OOB loads of W/B."""
+    check(4, 1025, eps=1e-5, shift=0.0)   # just over one block
+    check(4, 511,  eps=1e-5, shift=0.0)   # under one block
+
+
+def _test_large_shift():
+    """Large values test for possible overflow in intermediate float32 math."""
+    check(2, 8192, eps=1e-5, shift=1.0e3)
+
+
+def _test_varying_eps():
+    """Different eps values, including a very small one."""
+    check(2, 1024, eps=1e-12, shift=0.0)
+    check(2, 1024, eps=1.0,     shift=0.0)
+
+
+def _test_eps_zero_const_row():
+    """When variance is zero and eps=0 the kernel should produce NaN (0*inf)."""
+    torch.manual_seed(0)
+    M, N = 2, 1024
+    x = torch.full((M, N), 3.0)          # constant row → var = 0
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    # PyTorch reference (will be NaN)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=0.0)
+    y   = layer_norm(x, w, b, eps=0.0)
+    # Both should be all‑NaN
+    assert torch.isnan(ref).all() and torch.isnan(y).all(), \
+        "eps=0 with constant row did not produce NaN"
+
+
+def _test_fp16_input():
+    """Float16 input with float32 weights/biases – checks casting and accumulation."""
+    torch.manual_seed(0)
+    M, N = 2, 1025                     # non‑multiple block size to also test tail
+    x = (-2.3 + 0.5 * torch.randn(M, N, dtype=torch.float16))
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    # Reference in higher precision then cast back
+    ref = torch.nn.functional.layer_norm(x.float(), (N,), w, b, eps=1e-5).half()
+    y   = layer_norm(x, w, b, eps=1e-5)
+    assert torch.allclose(y, ref, atol=1e-3, rtol=0), \
+        "float16 input test failed"
+
+
+# Run the additional tests
+_test_non_multiple_block()
+_test_large_shift()
+_test_varying_eps()
+_test_eps_zero_const_row()
+_test_fp16_input()
+```

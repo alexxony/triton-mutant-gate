@@ -1,0 +1,58 @@
+{
+ "run_id": 1792456741,
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4627,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4209,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 17192,
+   "log": [
+    "Your test FAILS on the original kernel (NameError: name 'run_kernel' is not defined). It must pass on the original.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 38522,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test FAILS on the original kernel (NameError: name 'run_kernel' is not defined). It must pass on the original.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  }
+ ]
+}

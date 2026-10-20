@@ -1,0 +1,18 @@
+finish_reason=stop
+usage={'completion_tokens': 1283, 'prompt_tokens': 1731, 'total_tokens': 3014, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1052, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1731}
+---
+
+
+```python
+# Additional test that distinguishes the mutant (fp16 accumulator) from the original (fp32 accumulator)
+M, N, K = 64, 64, 1024          # problem size well under the 2M-element limit
+torch.manual_seed(123)          # deterministic input
+a = torch.randn((M, K), dtype=torch.float16)
+b = torch.randn((K, N), dtype=torch.float16)
+ref = torch.matmul(a, b)        # high‑precision reference (torch uses fp32 accumulation)
+out = matmul(a, b)              # Triton kernel under test
+# The original kernel (fp32 accumulator) should meet the 0.125 absolute tolerance,
+# whereas the mutant (fp16 accumulator) will exceed it due to reduced‑precision accumulation.
+assert torch.allclose(out, ref, atol=0.125, rtol=0), \
+    f"Accumulator precision test failed for shape ({M},{N},{K})"
+```

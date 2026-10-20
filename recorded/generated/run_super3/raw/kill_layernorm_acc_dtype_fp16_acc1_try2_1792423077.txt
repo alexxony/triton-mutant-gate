@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 1434, 'prompt_tokens': 1803, 'total_tokens': 3237, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1369, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1803}
+---
+
+
+EQUIVALENT
+The CPU interpreter (TRITON_INTERPRET=1) promotes all temporary variables to float32 regardless of the specified storage dtype, so the mutant’s use of float16 for the variance accumulator does not alter the numerical results compared to the original float32 accumulator.

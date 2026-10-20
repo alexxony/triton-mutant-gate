@@ -1,0 +1,139 @@
+{
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "kernels": {
+  "layernorm": {
+   "accepted": true,
+   "tries": 3,
+   "test": "# Additional tests for the fused layer norm kernel\ndef run_kernel(x, w, b, eps=1e-5):\n    \"\"\"Launch the kernel directly, returning output, mean, rstd.\"\"\"\n    M, N = x.shape\n    y = torch.empty_like(x)\n    mean = torch.empty((M,), dtype=torch.float32, device=x.device)\n    rstd = torch.empty((M,), dtype=torch.float32, device=x.device)\n    _layer_norm_fwd_fused[(M,)](x, y, w, b, mean, rstd, x.stride(0), N, eps, BLOCK_SIZE=1024)\n    return y, mean, rstd\n\n\ndef ref_layer_norm(x, w, b, eps=1e-5):\n    \"\"\"Reference implementation returning output, mean, rstd.\"\"\"\n    out = torch.nn.functional.layer_norm(x, (x.shape[1],), w, b, eps)\n    mean = x.mean(dim=1, keepdim=True)\n    var = x.var(dim=1, keepdim=True, unbiased=False)\n    rstd = 1 / torch.sqrt(var + eps)\n    return out, mean.squeeze(1), rstd.squeeze(1)\n\n\ndef assert_close(a, b, msg, atol=1e-2, rtol=0):\n    assert torch.allclose(a, b, atol=atol, rtol=rtol), msg\n\n\n# 1. Tiny N (N=1)\ntorch.manual_seed(1)\nx = torch.randn(4, 1)\nw = torch.rand(1)\nb = torch.rand(1)\nout, mean, rstd = run_kernel(x, w, b)\nref_out, ref_mean, ref_rstd = ref_layer_norm(x, w, b)\nassert_close(out, ref_out, \"N=1 output mismatch\")\nassert_close(mean, ref_mean, \"N=1 mean mismatch\")\nassert_close(rstd, ref_rstd, \"N=1 rstd mismatch\")\n\n# 2. N just below BLOCK_SIZE (1023)\ntorch.manual_seed(2)\nx = torch.randn(2, 1023)\nw = torch.rand(1023)\nb = torch.rand(1023)\nout, mean, rstd = run_kernel(x, w, b)\nref_out, ref_mean, ref_rstd = ref_layer_norm(x, w, b)\nassert_close(out, ref_out, \"N=1023 output mismatch\")\nassert_close(mean, ref_mean, \"N=1023 mean mismatch\")\nassert_close(rstd, ref_rstd, \"N=1023 rstd mismatch\")\n\n# 3. N just above BLOCK_SIZE (1025)\ntorch.manual_seed(3)\nx = torch.randn(2, 1025)\nw = torch.rand(1025)\nb = torch.rand(1025)\nout, mean, rstd = run_kernel(x, w, b)\nref_out, ref_mean, ref_rstd = ref_layer_norm(x, w, b)\nassert_close(out, ref_out, \"N=1025 output mismatch\")\nassert_close(mean, ref_mean, \"N=1025 mean mismatch\")\nassert_close(rstd, ref_rstd, \"N=1025 rstd mismatch\")\n\n# 4. Extreme eps values\ntorch.manual_seed(4)\nx = torch.randn(4, 512)\nw = torch.rand(512)\nb = torch.rand(512)\nfor eps in [1e-12, 1e-2]:\n    out, mean, rstd = run_kernel(x, w, b, eps=eps)\n    ref_out, ref_mean, ref_rstd = ref_layer_norm(x, w, b, eps=eps)\n    assert_close(out, ref_out, f\"eps={eps} output mismatch\")\n    assert_close(mean, ref_mean, f\"eps={eps} mean mismatch\")\n    assert_close(rstd, ref_rstd, f\"eps={eps} rstd mismatch\")\n\n# 5. Extreme magnitude values (use rtol to account for fp32 precision at large magnitudes)\ntorch.manual_seed(5)\nfor scale in [1e-4, 1e4]:\n    x = scale * torch.randn(4, 256)\n    w = torch.rand(256)\n    b = torch.rand(256)\n    out, mean, rstd = run_kernel(x, w, b)\n    ref_out, ref_mean, ref_rstd = ref_layer_norm(x, w, b)\n    # Relative tolerance handles precision loss at large magnitudes\n    assert_close(out, ref_out, f\"scale={scale} output mismatch\", rtol=1e-3)\n    assert_close(mean, ref_mean, f\"scale={scale} mean mismatch\", rtol=1e-3)\n    assert_close(rstd, ref_rstd, f\"scale={scale} rstd mismatch\", rtol=1e-3)\n\n# 6. Float16 dtype (kernel computes in float32, stores as float16)\ntorch.manual_seed(6)\nx = torch.randn(4, 512, dtype=torch.float16)\nw = torch.rand(512, dtype=torch.float16)\nb = torch.rand(512, dtype=torch.float16)\nout, mean, rstd = run_kernel(x, w, b)\nref_out, ref_mean, ref_rstd = ref_layer_norm(x.float(), w.float(), b.float())\n# Compare in float32 with relaxed tolerance for fp16 storage\nassert_close(out.float(), ref_out, \"float16 output mismatch\", atol=1e-2, rtol=1e-2)\nassert_close(mean, ref_mean, \"float16 mean mismatch\", atol=1e-2, rtol=1e-2)\nassert_close(rstd, ref_rstd, \"float16 rstd mismatch\", atol=1e-2, rtol=1e-2)\n\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1020 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1020 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#2",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1023 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#3",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1019 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#4",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1020 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1020 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: N=1 rstd mismatch"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: N=1 output mismatch"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#2",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "drop_eps",
+     "site": "eps#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: N=1 output mismatch"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: N=1 output mismatch"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: N=1 output mismatch"
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  }
+ },
+ "total_tokens": 16717
+}

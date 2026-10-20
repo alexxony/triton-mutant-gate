@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 1102, 'prompt_tokens': 1719, 'total_tokens': 2821, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1043, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1719}
+---
+
+
+EQUIVALENT – the mutant only changes the fill value for out‑of‑bounds loads of A, but those positions are always multiplied with zero‑filled elements from B, so the dot product (and thus the output) is unchanged for any input.

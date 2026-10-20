@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 837, 'prompt_tokens': 2131, 'total_tokens': 2968, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 759, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2131}
+---
+
+
+EQUIVALENT – the mask used for loading a and b is identical, so any out‑of‑bounds element of a is zeroed, making the product a·b zero regardless of whether the out‑of‑bounds b is loaded as 0 or 1; thus the mutant cannot produce a different output for any input.

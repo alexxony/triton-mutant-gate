@@ -1,0 +1,98 @@
+{
+ "run_id": 1792423216,
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2955,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2663,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 48290,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 23163,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5090,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4125,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "killed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 34824,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "accepted"
+   ],
+   "test": "# Test to expose float16 accumulation stall at 2048: 2050 tiles of 1.0\n# Original (float32 acc) -> 2050.0 -> f16 = 2050.0\n# Mutant (float16 acc) stalls at 2048.0 after 2048 tiles, stays 2048.0\n# Reference (torch.matmul f32 acc) -> 2050.0 -> f16 = 2050.0\ndef test_accumulation_stall_2050():\n    torch.manual_seed(0)\n    M, N, K = 1, 1, 32 * 2050  # 65600, exactly 2050 tiles\n    a = torch.zeros((M, K), dtype=torch.float16)\n    b = torch.zeros((K, N), dtype=torch.float16)\n    for i in range(0, K, 32):\n        a[0, i] = 1.0\n        b[i, 0] = 1.0\n    ref = torch.matmul(a, b)  # 2050.0 exactly representable in f16\n    out = matmul(a, b)\n    # Mutant produces 2048.0, diff=2.0 > 0.125\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), f\"stall 2050 mismatch: out={out.item()}, ref={ref.item()}\"\n\ntest_accumulation_stall_2050()\n",
+   "mutant_failure": "AssertionError: stall 2050 mismatch: out=2048.0, ref=2050.0"
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+finish_reason=stop
+usage={'completion_tokens': 2019, 'prompt_tokens': 1033, 'total_tokens': 3052, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1641, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1033}
+---
+
+
+```python
+def _assert_close(x, msg=""):
+    y = softmax(x)
+    y_ref = torch.softmax(x, dim=1)
+    # torch.allclose fails on NaNs; replace NaNs with a sentinel that compares equal
+    y_nan = torch.isnan(y)
+    y_ref_nan = torch.isnan(y_ref)
+    assert torch.all(y_nan == y_ref_nan), msg + f" NaN mismatch {tuple(x.shape)}"
+    # compare only the finite parts
+    finite = ~y_nan
+    if finite.any():
+        assert torch.allclose(y[finite], y_ref[finite], atol=1e-5, rtol=1e-5), \
+            msg + f" value mismatch {tuple(x.shape)}"
+
+# 1. Large positive values (tests exp overflow safety via max subtraction)
+_assert_close(torch.randn(2, 5) * 1e4 + 1e4, "large values")
+
+# 2. Large negative values (tests exp underflow to zero)
+_assert_close(torch.randn(3, 4) * -1e4, "small values")
+
+# 3. Very small scale (tests precision near zero)
+_assert_close(torch.randn(4, 7) * 0.1, "small scale")
+
+# 4. Non‑contiguous input (stride handling)
+_assert_close(torch.randn(8, 8).t(), "non‑contiguous")
+
+# 5. All‑zero row (checks denominator != 0)
+_assert_close(torch.zeros(1, 10), "zeros")
+
+# 6. Single column (BLOCK_SIZE=1, tests degenerate reduction)
+_assert_close(torch.randn(5, 1), "single column")
+```

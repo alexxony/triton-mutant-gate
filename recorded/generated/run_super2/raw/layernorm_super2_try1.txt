@@ -1,0 +1,58 @@
+finish_reason=stop
+usage={'completion_tokens': 4013, 'prompt_tokens': 934, 'total_tokens': 4947, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3291, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 934}
+---
+
+
+```python
+# Additional tests to stress boundary/tail handling, non-contiguous inputs,
+# edge‑case eps, half‑precision, and large values.
+
+def test_noncontiguous():
+    M, N = 16, 32
+    # Create a tensor with stride > 1 in the last dimension
+    base = torch.randn(M, N * 2, dtype=torch.float32)
+    x = base[:, ::2]                     # shape (M, N), but not contiguous
+    w = torch.randn(N, dtype=torch.float32)
+    b = torch.randn(N, dtype=torch.float32)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    y = layer_norm(x, w, b, eps=1e-5)
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"noncontiguous mismatch {M}x{N}"
+
+def test_eps_zero_const():
+    M, N = 8, 16
+    x = torch.ones(M, N, dtype=torch.float32)   # zero variance
+    w = torch.randn(N, dtype=torch.float32)
+    b = torch.randn(N, dtype=torch.float32)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=0.0)
+    y = layer_norm(x, w, b, eps=0.0)
+    # Allow NaNs/Infs to compare as equal
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0, equal_nan=True), \
+        f"eps=0 constant mismatch {M}x{N}"
+
+def test_half():
+    M, N = 8, 32
+    x = torch.randn(M, N, dtype=torch.float16)
+    w = torch.randn(N, dtype=torch.float16)
+    b = torch.randn(N, dtype=torch.float16)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    y = layer_norm(x, w, b, eps=1e-5)
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"float16 mismatch {M}x{N}"
+
+def test_large_values():
+    M, N = 8, 32
+    x = 1e6 * torch.randn(M, N, dtype=torch.float32)
+    w = torch.randn(N, dtype=torch.float32) * 0.01
+    b = torch.randn(N, dtype=torch.float32) * 0.01
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    y = layer_norm(x, w, b, eps=1e-5)
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"large values mismatch {M}x{N}"
+
+# Run the additional tests
+test_noncontiguous()
+test_eps_zero_const()
+test_half()
+test_large_values()
+```

@@ -1,0 +1,139 @@
+{
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "kernels": {
+  "layernorm": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests to expose bugs\ndef _run_bug_tests():\n    # 1. Small N not multiple of BLOCK_SIZE\n    torch.manual_seed(0)\n    x = torch.randn(2, 5) + 0.1\n    w = torch.randn(5)\n    b = torch.randn(5)\n    ref = torch.nn.functional.layer_norm(x, (5,), w, b, 1e-5)\n    out = layer_norm(x, w, b, 1e-5)\n    assert torch.allclose(out, ref, atol=1e-2, rtol=1e-2), \"small N failure\"\n\n    # 2. eps = 0 (no stabilization)\n    torch.manual_seed(0)\n    x = torch.randn(3, 8)\n    w = torch.randn(8)\n    b = torch.randn(8)\n    ref = torch.nn.functional.layer_norm(x, (8,), w, b, 0.0)\n    out = layer_norm(x, w, b, 0.0)\n    assert torch.allclose(out, ref, atol=1e-2, rtol=1e-2), \"eps=0 failure\"\n\n    # 3. Large shift causing large values\n    torch.manual_seed(0)\n    x = torch.randn(1, 16) + 1e3\n    w = torch.randn(16)\n    b = torch.randn(16)\n    ref = torch.nn.functional.layer_norm(x, (16,), w, b, 1e-5)\n    out = layer_norm(x, w, b, 1e-5)\n    assert torch.allclose(out, ref, atol=1e-2, rtol=1e-2), \"large shift failure\"\n\n    # 4. Half precision input\n    torch.manual_seed(0)\n    x_h = torch.randn(2, 32, dtype=torch.float16) + 0.5\n    w_h = torch.randn(32, dtype=torch.float16)\n    b_h = torch.randn(32, dtype=torch.float16)\n    ref_h = torch.nn.functional.layer_norm(x_h, (32,), w_h, b_h, 1e-5)\n    out_h = layer_norm(x_h, w_h, b_h, 1e-5)\n    assert torch.allclose(out_h, ref_h, atol=1e-2, rtol=1e-2), \"half precision failure\"\n\n    # 5. All\u2011zero input (checks division\u2011by\u2011zero handling)\n    torch.manual_seed(0)\n    x_z = torch.zeros(2, 32)\n    w_z = torch.ones(32)\n    b_z = torch.zeros(32)\n    ref_z = torch.nn.functional.layer_norm(x_z, (32,), w_z, b_z, 1e-5)\n    out_z = layer_norm(x_z, w_z, b_z, 1e-5)\n    assert torch.allclose(out_z, ref_z, atol=1e-5, rtol=1e-5), \"all\u2011zero failure\"\n\n_run_bug_tests()\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#2",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1019 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#3",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1019 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#4",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1014 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: eps=0 failure"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: small N failure"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#2",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "drop_eps",
+     "site": "eps#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: all\u2011zero failure"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: small N failure"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: small N failure"
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  }
+ },
+ "total_tokens": 6846
+}

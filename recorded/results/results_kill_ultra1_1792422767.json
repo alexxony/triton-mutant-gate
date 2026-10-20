@@ -1,0 +1,268 @@
+{
+ "run_id": 1792422767,
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "results": [
+  {
+   "kernel": "layernorm",
+   "op": "drop_load_mask",
+   "site": "load#0",
+   "outcome": "killed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 9607,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "accepted"
+   ],
+   "test": "# Test N=1000 (not a multiple of BLOCK_SIZE=1024) to expose missing mask in mean reduction\ntorch.manual_seed(42)\nM, N = 4, 1000\nx = -2.3 + 0.5 * torch.randn(M, N)\nw = torch.rand(N)\nb = torch.rand(N)\neps = 1e-5\nref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\nout = layer_norm(x, w, b, eps)\nassert torch.allclose(out, ref, atol=1e-2, rtol=0), f\"Mutant fails on N={N} (non-multiple of BLOCK_SIZE): max diff={(out - ref).abs().max().item()}\"\n",
+   "mutant_failure": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tensor')"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_load_mask",
+   "site": "load#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4140,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_load_mask",
+   "site": "load#2",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 20099,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_load_mask",
+   "site": "load#3",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5935,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_load_mask",
+   "site": "load#4",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5365,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_store_mask",
+   "site": "store#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 6942,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "mask_lt_to_le",
+   "site": "lt#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 13612,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "mask_lt_to_le",
+   "site": "lt#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 6186,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "mask_lt_to_le",
+   "site": "lt#2",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 6626,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "accepted"
+   ],
+   "test": "# Test with N not a multiple of BLOCK_SIZE to expose the mutant's off-by-one in variance computation\ntorch.manual_seed(0)\nM, N = 4, 1025  # N=1025 (not a multiple of 1024) triggers the mutant's extra variance term\nx = -2.3 + 0.5 * torch.randn(M, N)\nw = torch.rand(N)\nb = torch.rand(N)\nref = torch.nn.functional.layer_norm(x, (N,), w, b, 1e-5)\nout = layer_norm(x, w, b, 1e-5)\nassert torch.allclose(out, ref, atol=1e-2, rtol=0), f\"mutant fails at N={N} (non-multiple of BLOCK_SIZE)\"\n",
+   "mutant_failure": "AssertionError: mutant fails at N=1025 (non-multiple of BLOCK_SIZE)"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "mask_lt_to_le",
+   "site": "lt#3",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 20257,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 8698,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2445,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3048,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_eps",
+   "site": "eps#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 7965,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "divisor_off_by_one",
+   "site": "div#1",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 6165,
+   "log": [
+    "accepted"
+   ],
+   "test": "# Extra tests to distinguish population variance (original) from sample variance (mutant)\n# The mutant divides by (N-1) instead of N, causing a systematic difference in rstd.\n# We use tighter tolerances and amplified weights to expose the discrepancy.\n\ndef check_tight(M, N, eps=1e-5, atol=1e-4):\n    \"\"\"Check with tighter absolute tolerance.\"\"\"\n    torch.manual_seed(0)\n    x = -2.3 + 0.5 * torch.randn(M, N)\n    w = torch.rand(N)\n    b = torch.rand(N)\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    out = layer_norm(x, w, b, eps)\n    assert torch.allclose(out, ref, atol=atol, rtol=0), f\"tight mismatch {M}x{N}\"\n\ndef check_amplified(M, N, eps=1e-5, weight_scale=1000.0, atol=1e-2):\n    \"\"\"Check with large constant weight to amplify the variance divisor difference.\"\"\"\n    torch.manual_seed(0)\n    x = -2.3 + 0.5 * torch.randn(M, N)\n    w = torch.full((N,), weight_scale)\n    b = torch.zeros(N)\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    out = layer_norm(x, w, b, eps)\n    assert torch.allclose(out, ref, atol=atol, rtol=0), f\"amplified mismatch {M}x{N}\"\n\n# 1. Tight tolerance on single-block case (N=1024)\ncheck_tight(4, 1024, atol=1e-4)\n\n# 2. Tight tolerance on two-block case (N=2048)\ncheck_tight(4, 2048, atol=1e-4)\n\n# 3. Amplified weight on single row (M=1) to make the difference obvious even with loose tolerance\ncheck_amplified(1, 1024, weight_scale=1000.0, atol=1e-2)\n",
+   "mutant_failure": "AssertionError: tight mismatch 4x1024"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 27253,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 14777,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 3274,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 6199,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 31498,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT)."
+   ]
+  }
+ ]
+}

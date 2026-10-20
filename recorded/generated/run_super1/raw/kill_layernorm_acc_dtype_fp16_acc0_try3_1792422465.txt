@@ -1,0 +1,28 @@
+finish_reason=stop
+usage={'completion_tokens': 3980, 'prompt_tokens': 2014, 'total_tokens': 5994, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3655, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2014}
+---
+
+
+```python
+def test_large_nonrepresentable_constant():
+    """Use a constant that is not exactly representable in float16.
+    With a small N (to avoid overflow) the float16 accumulator incurs a
+    noticeable error in the mean, which propagates to the output and exceeds
+    the existing tolerance."""
+    torch.manual_seed(0)
+    M, N = 1, 6                     # small N keeps the sum inside float16 range
+    const = 10000.1                 # not exactly representable in float16 (spacing ~8)
+    x = torch.full((M, N), const, dtype=torch.float32)
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    y = layer_norm(x, w, b, eps=1e-5)
+    # Ideal output: since the normalized value should be zero, result equals bias.
+    expected = b.expand_as(x)
+    # The original kernel (float32 accumulator) meets the existing tolerance;
+    # the mutant's float16 accumulator yields a mean error ~ few units,
+    # leading to an output error >> 1e-2.
+    assert torch.allclose(y, expected, atol=1e-2, rtol=0), \
+        f"large non‑representable constant test failed: M={M}, N={N}, const={const}"
+
+test_large_nonrepresentable_constant()
+```

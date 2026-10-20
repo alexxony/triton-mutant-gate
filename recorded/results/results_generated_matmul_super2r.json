@@ -1,0 +1,104 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "matmul": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests targeting boundary/tail handling, non\u2011contiguous layouts,\n# and edge\u2011case values.  Reuses the existing `matmul` helper and the `check`\n# pattern (no kernel modification).\n\ndef _check_shape(M, N, K, *, tag=\"\"):\n    \"\"\"Run a single correctness check with a descriptive message on failure.\"\"\"\n    torch.manual_seed(0)\n    a = torch.randn((M, K), dtype=torch.float16)\n    b = torch.randn((K, N), dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    got = matmul(a, b)\n    ok = torch.allclose(got, ref, atol=0.125, rtol=0)\n    if not ok:\n        # Provide a concise message; the assertion will show the shapes.\n        raise AssertionError(f\"{tag} mismatch for {M}x{N}x{K}\")\n    return True\n\n# ----------------------------------------------------------------------\n# 1. Shapes that are NOT multiples of the tile sizes (64,64,32).\n#    The current kernel uses `% M` and `% N` for row/col offsets,\n#    which causes wrap\u2011around bugs when dimensions exceed a tile boundary.\n# ----------------------------------------------------------------------\n_non_multiple_shapes = [\n    (70, 70, 70),   # all dims not multiples\n    (65, 64, 64),   # M not multiple\n    (64, 65, 64),   # N not multiple\n    (64, 64, 33),   # K not multiple\n    (129, 129, 129),# all odd, >1 tile\n    (30, 30, 30),   # all smaller than a tile\n]\n\nfor i, (M, N, K) in enumerate(_non_multiple_shapes):\n    _check_shape(M, N, K, tag=f\"non-multiple[{i}]\")\n\n# ----------------------------------------------------------------------\n# 2. Non\u2011contiguous inputs (stride != 1 in inner dimension).\n#    The kernel relies on the passed strides; using a transposed view\n#    exercises the stride arithmetic.\n# ----------------------------------------------------------------------\ndef _make_noncontig(shape, dim0_stride_multiplier=1):\n    \"\"\"Return a tensor with the given shape but with a non\u2011unit stride in dim 0.\"\"\"\n    # Create a larger contiguous tensor then take a view with an offset stride.\n    # Example: for shape (M, K) we allocate (M*stride_m, K) and slice.\n    M, K = shape\n    stride_m = max(1, dim0_stride_multiplier) * K  # ensure stride >= K\n    base = torch.empty((M * stride_m, K), dtype=torch.float16)\n    # Take every `stride_m`-th row -> resulting stride in dim0 = stride_m * element_size\n    return base[::stride_m, :].contiguous()  # actually still contiguous; need as_strided\n    # Instead use as_strided safely:\n    # return torch.as_strided(base, size=(M, K), stride=(stride_m, 1))\n\n# Simpler: use .transpose on a larger tensor to get non\u2011unit stride without as_strided.\ndef _transpose_view(t):\n    return t.t()  # swaps strides, making inner dimension stride = original outer stride\n\nfor i, (M, N, K) in enumerate([(50, 50, 50), (100, 100, 100)]):\n    # Make A non\u2011contiguous by transposing a (K,M) tensor\n    A = torch.randn((K, M), dtype=torch.float16).t()  # shape (M,K), stride[0]=1, stride[1]=M\n    # Make B non\u2011contiguous similarly\n    B = torch.randn((N, K), dtype=torch.float16).t()  # shape (K,N) -> after .t() shape (N,K) not what we need\n    # We need B shape (K,N); so create (N,K) then .t()\n    B = torch.randn((N, K), dtype=torch.float16).t()  # now shape (K,N), stride[0]=1, stride[1]=K\n    # Ensure shapes are correct for matmul\n    assert A.shape == (M, K) and B.shape == (K, N)\n    _check_shape(M, N, K, tag=f\"noncontig[{i}]\")\n\n# ----------------------------------------------------------------------\n# 3. Extreme values that stress fp16 range and accumulation.\n#    Includes large magnitudes, subnormals, zeros, infinities and NaNs.\n# ----------------------------------------------------------------------\ndef _check_extreme(M, N, K, fill_value):\n    a = torch.full((M, K), fill_value, dtype=torch.float16)\n    b = torch.full((K, N), fill_value, dtype=torch.float16)\n    # Avoid inf*0 producing NaN in reference; handle separately.\n    ref = torch.matmul(a, b)\n    got = matmul(a, b)\n    # For non\u2011finite values we require exact match (bitwise) because tolerance\n    # may hide sign differences. Use torch.equal for finiteness check.\n    if torch.isfinite(ref).all():\n        ok = torch.allclose(got, ref, atol=0.125, rtol=0)\n    else:\n        ok = torch.equal(got, ref)\n    if not ok:\n        raise AssertionError(f\"extreme value {fill_value} failed for {M}x{N}x{K}\")\n    return True\n\n_extreme_vals = [0.0, 1.0, -1.0, 6e4, -6e4, 2.5e-8, -2.5e-8]  # near limits, subnormals\nfor i, val in enumerate(_extreme_vals):\n    _check_extreme(32, 32, 32, val)  # small tile to keep launch count low\n\n# ----------------------------------------------------------------------\n# 4. Mixed extreme values (A large, B small) to test accumulation overflow/underflow.\n# ----------------------------------------------------------------------\ndef _check_mixed(M, N, K, a_val, b_val):\n    a = torch.full((M, K), a_val, dtype=torch.float16)\n    b = torch.full((K, N), b_val, dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    got = matmul(a, b)\n    ok = torch.allclose(got, ref, atol=0.125, rtol=0) if torch.isfinite(ref).all() else torch.equal(got, ref)\n    if not ok:\n        raise AssertionError(f\"mixed ({a_val}*{b_val}) failed for {M}x{N}x{K}\")\n    return True\n\n_mixed_pairs = [(6e4, 1e-4), (-6e4, 1e-4), (6e4, 0), (0, 6e4)]\nfor i, (av, bv) in enumerate(_mixed_pairs):\n    _check_mixed(16, 16, 16, av, bv)\n\n# ----------------------------------------------------------------------\n# End of additional tests.\n# ----------------------------------------------------------------------\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 26 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1664 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 3712 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 64 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 64 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": "  return TensorHandle(src.data.astype(_get_np_dtype(dst_type)), dst_type.scalar)"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": "  return TensorHandle(src.data.astype(_get_np_dtype(dst_type)), dst_type.scalar)"
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": "  return TensorHandle(np.matmul(a_data, b_data, dtype=d.data.dtype) + d.data, d.dtype.scalar)"
+    },
+    {
+     "op": "k_loop_floor_div",
+     "site": "kloop#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: non-multiple[0] mismatch for 70x70x70"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 28 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 58 active lane(s) outside every kernel tenso"
+    }
+   ]
+  }
+ },
+ "total_tokens": 4014
+}

@@ -1,0 +1,28 @@
+finish_reason=stop
+usage={'completion_tokens': 3025, 'prompt_tokens': 1736, 'total_tokens': 4761, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2729, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1736}
+---
+
+
+```python
+def _test_large_variance_overflow():
+    """Variance large enough that float16 accumulation overflows when summed across the block."""
+    torch.manual_seed(123)
+    M, N = 2, 1024          # N is a multiple of BLOCK_SIZE=1024
+    # Create input with large standard deviation (~10) → per‑column sum ≈ 8 * 100 = 800 > 65535 limit of float16
+    x = torch.randn(M, N, dtype=torch.float32) * 10.0
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+
+    # Reference using PyTorch (float32 accumulation)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    # Triton kernel under test
+    y = layer_norm(x, w, b, eps=1e-5)
+
+    # Original kernel should match reference within tolerance
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        "Large‑variance test failed on the original kernel"
+
+
+# Run the additional test
+_test_large_variance_overflow()
+```

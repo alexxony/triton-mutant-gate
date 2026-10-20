@@ -1,0 +1,27 @@
+finish_reason=stop
+usage={'completion_tokens': 3588, 'prompt_tokens': 1811, 'total_tokens': 5399, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 3261, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1811}
+---
+
+
+```python
+def _check_k_tail():
+    # Choose a shape where K is not a multiple of BLOCK_SIZE_K (32)
+    # but M and N are multiples of the output tile size (64) so that
+    # the tail in K is not masked away by the output bounds.
+    M, N, K = 64, 64, 65  # 65 = 2*32 + 1  → one incomplete K‑iteration
+    torch.manual_seed(2024)
+    a = torch.randn((M, K), dtype=torch.float16)
+    b = torch.randn((K, N), dtype=torch.float16)
+    ref = torch.matmul(a, b)
+    out = matmul(a, b)
+    # The original kernel should match the reference within the given tolerance.
+    assert torch.allclose(out, ref, atol=0.125, rtol=0), \
+        f"original kernel failed on shape {M}x{N}x{K}"
+    # The mutant kernel produces a noticeable deviation because it fills
+    # out‑of‑bounds A loads with 1.0 instead of 0.0, adding extra contributions
+    # from the B matrix in the tail K‑iteration.
+    assert not torch.allclose(out, ref, atol=0.125, rtol=0), \
+        f"mutant not distinguished on shape {M}x{N}x{K}"
+
+_check_k_tail()
+```

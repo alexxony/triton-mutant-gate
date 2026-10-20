@@ -1,0 +1,28 @@
+finish_reason=stop
+usage={'completion_tokens': 1221, 'prompt_tokens': 2442, 'total_tokens': 3663, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 953, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2442}
+---
+
+
+```python
+def _test_outlier_float16_overflow():
+    """One huge outlier makes (x-mean)^2 exceed float16 max, causing overflow in _var."""
+    torch.manual_seed(0)
+    M, N = 1, 1024               # N equals BLOCK_SIZE so each column handled once
+    x = torch.zeros(M, N, dtype=torch.float32)
+    x[0, 0] = 300.0              # large value in first column
+    w = torch.ones(N, dtype=torch.float32)
+    b = torch.zeros(N, dtype=torch.float32)
+
+    # PyTorch reference (float32 throughout)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    # Triton kernel under test
+    y = layer_norm(x, w, b, eps=1e-5)
+
+    # Original kernel should match reference within the existing tolerance
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        "Outlier test failed on the original kernel"
+
+
+# Run the additional test
+_test_outlier_float16_overflow()
+```

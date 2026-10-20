@@ -1,0 +1,26 @@
+finish_reason=stop
+usage={'completion_tokens': 1802, 'prompt_tokens': 1659, 'total_tokens': 3461, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1489, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1659}
+---
+
+
+```python
+def test_float16_overflow():
+    """Force some input values beyond float16's max range.
+    The original kernel accumulates in float32 and stays finite,
+    while the mutant's float16 accumulator overflows to Inf,
+    producing NaN/Inf outputs that differ from the reference."""
+    torch.manual_seed(0)
+    M, N = 1, 2048          # well under the 2M‑element limit
+    shift = 1e5             # makes |x| >> 65504 (float16 max)
+    x = -2.3 + 0.5 * torch.randn(M, N, dtype=torch.float32) + shift
+    w = torch.rand(N, dtype=torch.float32)
+    b = torch.rand(N, dtype=torch.float32)
+    y = layer_norm(x, w, b, eps=1e-5)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)
+    # The original kernel should match ref within the existing tolerance;
+    # the mutant will produce NaNs/Infs and fail this assert.
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"float16 overflow test failed: M={M}, N={N}, shift={shift}"
+
+test_float16_overflow()
+```

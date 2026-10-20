@@ -1,0 +1,86 @@
+{
+ "run_id": 1792422833,
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "results": [
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2130,
+   "log": [
+    "accepted"
+   ],
+   "test": "# Additional test that distinguishes the mutant (missing max subtraction)\ndef _test_overflow():\n    torch.manual_seed(42)\n    # Choose a scale large enough to push some elements beyond exp overflow (~88 for float32)\n    m, n, scale = 4, 32, 120.0   # 4*32=128 elements << 2M limit\n    x = torch.randn(m, n, dtype=torch.float32) * scale\n    y = softmax(x)               # kernel under test\n    ref = torch.softmax(x, dim=1)  # reference using PyTorch (numerically stable)\n    # The mutant will produce NaN or wildly incorrect values due to overflow,\n    # causing the allclose check to fail.\n    assert torch.allclose(y, ref, atol=1e-5, rtol=1e-5), \\\n        f\"Overflow test failed: m={m}, n={n}, scale={scale}\"\n\n_test_overflow()\n",
+   "mutant_failure": "AssertionError: Overflow test failed: m=4, n=32, scale=120.0"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2156,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2309,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "drop_eps",
+   "site": "eps#0",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 6749,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: zero\u2011variance test failed: max diff = 0.00010706484317779541). It must pass on the original.",
+    "accepted"
+   ],
+   "test": "def test_small_variance():\n    \"\"\"When variance is much smaller than eps, removing eps changes the scaling noticeably.\"\"\"\n    torch.manual_seed(2024)\n    M, N = 2, 64                     # well under 2M elements\n    const_val = 0.7                  # any constant offset\n    half_range = 0.0004              # produces std \u2248 0.00023 << eps\n    x = const_val + (torch.rand(M, N) - 0.5) * 2 * half_range  # uniform in [const\u00b1half_range]\n    w = torch.ones(N, dtype=torch.float32)\n    b = torch.zeros(N, dtype=torch.float32)\n    eps = 1e-5\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    y = layer_norm(x, w, b, eps)\n    # Original kernel (with eps) should match PyTorch's reference tightly;\n    # the mutant (missing eps) will deviate far beyond this tolerance.\n    assert torch.allclose(y, ref, atol=5e-3, rtol=0), \\\n        f\"small\u2011variance test failed: max diff = {(y - ref).abs().max()}\"\n\n# Run the new test\ntest_small_variance()\n",
+   "mutant_failure": "AssertionError: small\u2011variance test failed: max diff = 1.6210523843765259"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 11632,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 7752,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

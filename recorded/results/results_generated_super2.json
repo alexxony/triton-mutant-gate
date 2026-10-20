@@ -1,0 +1,222 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "kernels": {
+  "vecadd": {
+   "accepted": true,
+   "tries": 2,
+   "test": "# Additional tests to expose boundary, tail, numeric, dtype and memory\u2011safety bugs\n\ndef _test_multiple_sizes():\n    \"\"\"Test various lengths (including tail cases) in a single launch.\"\"\"\n    sizes = [1, 1023, 1024, 2049, 4096, 8192, 16384]  # total < 100k\n    total = sum(sizes)\n    x_big = torch.empty(total, dtype=torch.float32)\n    y_big = torch.empty(total, dtype=torch.float32)\n    exp_big = torch.empty(total, dtype=torch.float32)\n    offset = 0\n    for sz in sizes:\n        x_part = torch.randn(sz)\n        y_part = torch.randn(sz)\n        x_big[offset:offset+sz] = x_part\n        y_big[offset:offset+sz] = y_part\n        exp_big[offset:offset+sz] = x_part + y_part\n        offset += sz\n    out_big = add(x_big, y_big)\n    offset = 0\n    for sz in sizes:\n        if not torch.allclose(out_big[offset:offset+sz], exp_big[offset:offset+sz]):\n            raise AssertionError(f\"multi-size test failed at size {sz}\")\n        offset += sz\n\ndef _test_noncontiguous():\n    \"\"\"Non\u2011contiguous inputs should expose missing stride handling.\"\"\"\n    base = torch.randn(64, 64, dtype=torch.float32)   # contiguous\n    x = base.transpose(0, 1)                         # non\u2011contiguous\n    y = base.transpose(0, 1).clone()                 # same layout as x\n    expected = x + y                                 # PyTorch respects strides\n    got = add(x, y)\n    # If the kernel ignores strides, this will fail \u2192 bug exposed.\n    assert torch.allclose(got, expected, equal_nan=True), (\n        \"Kernel gave wrong result for non\u2011contiguous input (stride bug)\"\n    )\n\ndef _test_special_values():\n    \"\"\"Check Inf, -Inf, NaN and signed zeros.\"\"\"\n    x = torch.tensor([float('inf'), float('-inf'), float('nan'),\n                      0.0, -0.0, 1e30, -1e30], dtype=torch.float32)\n    y = torch.tensor([1.0, -2.0, 3.0, 4.0, 5.0, -1e30, 1e30],\n                     dtype=torch.float32)\n    expected = x + y\n    got = add(x, y)\n    assert torch.allclose(got, expected, equal_nan=True), (\n        \"Special value handling failed\"\n    )\n\ndef _test_half_precision():\n    \"\"\"FP16 path \u2013 ensure no silent promotion/mis\u2011cast.\"\"\"\n    x = torch.randn(5000, dtype=torch.float16)\n    y = torch.randn(5000, dtype=torch.float16)\n    # FP16 has lower precision; relax tolerances slightly.\n    assert torch.allclose(add(x, y), x + y, atol=1e-3, rtol=1e-3), (\n        \"FP16 addition mismatch\"\n    )\n\ndef _test_integer():\n    \"\"\"Small integer tensors \u2013 verify no overflow in test range.\"\"\"\n    x = torch.randint(-100, 100, (2000,), dtype=torch.int32)\n    y = torch.randint(-100, 100, (2000,), dtype=torch.int32)\n    assert torch.equal(add(x, y), x + y), (\n        \"Integer addition mismatch\"\n    )\n\n# Run the additional tests\n_test_multiple_sizes()\n_test_noncontiguous()\n_test_special_values()\n_test_half_precision()\n_test_integer()\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    }
+   ]
+  },
+  "softmax": {
+   "accepted": true,
+   "tries": 2,
+   "test": "def _run_extra_tests():\n    def test_case(m, n, scale=1.0):\n        torch.manual_seed(0)\n        x = torch.randn(m, n, dtype=torch.float32) * scale\n        y = softmax(x)\n        ref = torch.softmax(x, dim=1)\n        assert torch.allclose(y, ref, atol=1e-5, rtol=1e-5), \\\n            f\"softmax mismatch: m={m}, n={n}, scale={scale}\"\n\n    # Edge cases: very small column counts\n    test_case(20, 1)          # n_cols = 1\n    test_case(20, 2)          # n_cols = 2\n    test_case(20, 3)          # n_cols = 3 (non\u2011power\u2011of\u2011two)\n\n    # Power\u2011of\u2011two and just\u2011over sizes\n    test_case(20, 128)        # n_cols = power of two\n    test_case(20, 129)        # n_cols = just over power of two\n\n    # Larger row count to stress row\u2011loop\n    test_case(150, 50)        # moderate size\n\n    # Different scales to test numerical stability\n    test_case(30, 40, scale=0.1)\n    test_case(30, 40, scale=10.0)\n\n# Run the additional tests\n_run_extra_tests()\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 243 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "inf#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 181x781 scale=1.0"
+    },
+    {
+     "op": "drop_max_subtract",
+     "site": "max#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  },
+  "layernorm": {
+   "accepted": true,
+   "tries": 4,
+   "test": "# Additional tests \u2013 avoid the N=1, eps=0 case that produces NaNs\ndef test_various_shapes():\n    \"\"\"Test a range of feature sizes, skipping the problematic N=1, eps=0 case.\"\"\"\n    cases = [\n        (7, 1e-5),         # small N < BLOCK_SIZE\n        (15, 1e-5),        # still small\n        (100, 1e-5),       # moderate, not multiple of 1024\n        (1023, 1e-5),      # just under BLOCK_SIZE\n        (1025, 1e-5),      # just over BLOCK_SIZE \u2013 tests the tail after the first full block\n    ]\n    for N, eps in cases:\n        check(2, N, eps, shift=0.0)\n\ndef test_half():\n    \"\"\"Check correctness with float16 inputs.\"\"\"\n    M, N = 2, 16\n    x = torch.randn(M, N, dtype=torch.float16)\n    w = torch.randn(N, dtype=torch.float16)\n    b = torch.randn(N, dtype=torch.float16)\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)\n    y = layer_norm(x, w, b, eps=1e-5)\n    assert torch.allclose(y, ref, atol=1e-2, rtol=0), f\"float16 mismatch {M}x{N}\"\n\ndef test_large_values():\n    \"\"\"Check with large magnitude inputs to stress numerical stability.\"\"\"\n    M, N = 2, 16\n    x = 1e6 * torch.randn(M, N, dtype=torch.float32)\n    w = torch.randn(N, dtype=torch.float32) * 0.01\n    b = torch.randn(N, dtype=torch.float32) * 0.01\n    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps=1e-5)\n    y = layer_norm(x, w, b, eps=1e-5)\n    assert torch.allclose(y, ref, atol=1e-2, rtol=0), f\"large values mismatch {M}x{N}\"\n\n# Run the additional tests\ntest_various_shapes()\ntest_half()\ntest_large_values()\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1010 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1010 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#2",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1017 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#3",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1017 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#4",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1010 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1010 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 2x7"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 2x7"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#2",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "drop_eps",
+     "site": "eps#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 2x7"
+    },
+    {
+     "op": "divisor_off_by_one",
+     "site": "div#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 2x7"
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    }
+   ]
+  },
+  "matmul": {
+   "accepted": false,
+   "tries": 4,
+   "test": "for M, N, K in [(1, 1, 1), (10, 10, 10), (33, 33, 33), (65, 65, 30), (80, 40, 20), (90, 30, 30)]:\n    check(M, N, K)\n",
+   "mutants": []
+  }
+ },
+ "total_tokens": 46186
+}

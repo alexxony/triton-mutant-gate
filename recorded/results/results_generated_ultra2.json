@@ -1,0 +1,187 @@
+{
+ "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+ "kernels": {
+  "vecadd": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests for boundary conditions, dtypes, and non-contiguous tensors\ndef check_dtype(size, dtype):\n    torch.manual_seed(0)\n    if dtype.is_floating_point:\n        x = torch.rand(size, dtype=dtype)\n        y = torch.rand(size, dtype=dtype)\n    else:\n        x = torch.randint(-100, 100, (size,), dtype=dtype)\n        y = torch.randint(-100, 100, (size,), dtype=dtype)\n    out = add(x, y)\n    ref = x + y\n    assert torch.allclose(out, ref), f\"mismatch size={size} dtype={dtype}\"\n\ndef check_noncontiguous():\n    torch.manual_seed(0)\n    # Create non-contiguous 2D tensors (transposed)\n    x = torch.rand(32, 32).t()\n    y = torch.rand(32, 32).t()\n    out = add(x, y)\n    ref = x + y\n    assert torch.allclose(out, ref), \"non-contiguous mismatch\"\n\n# Boundary sizes (test mask handling at block edges)\ncheck_dtype(1, torch.float32)\ncheck_dtype(1023, torch.float32)\ncheck_dtype(1025, torch.float32)\n# Different dtypes\ncheck_dtype(1024, torch.float16)\ncheck_dtype(1024, torch.int32)\n# Non-contiguous memory layout\ncheck_noncontiguous()\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 16 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 896 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    }
+   ]
+  },
+  "softmax": {
+   "accepted": true,
+   "tries": 1,
+   "test": "# Additional tests to expose boundary, numerical, and memory-layout bugs\n# 1. Tiny column counts (tail handling)\ncheck(10, 1)\ncheck(10, 2)\ncheck(10, 3)\n\n# 2. Column count just above a power of two (mask handling)\ncheck(10, 1025)   # BLOCK_SIZE=2048\n\n# 3. Numerical stability: large magnitudes, identical values, mixed signs\ntorch.manual_seed(0)\nx_num = torch.tensor([\n    [1000.0, 2000.0, 3000.0],\n    [-1000.0, -2000.0, -3000.0],\n    [1000.0, -1000.0, 0.0],\n    [5.0, 5.0, 5.0],\n])\ny_num = softmax(x_num)\nexpected_num = torch.softmax(x_num, dim=1)\nassert torch.allclose(y_num, expected_num, atol=1e-5), \"numerical edge cases failed\"\n\n# 4. Float64 dtype (constant -inf is float64, kernel should adapt)\ntorch.manual_seed(0)\nx64 = torch.randn(10, 5, dtype=torch.float64)\ny64 = softmax(x64)\nexpected64 = torch.softmax(x64, dim=1)\nassert torch.allclose(y64, expected64, atol=1e-5), \"float64 failed\"\n\n# 5. Non-contiguous rows (row stride > n_cols, columns still contiguous)\nbase = torch.randn(20, 10)\nx_nc = base[::2, :]          # shape (10,10), row stride = 20 elements\ny_nc = softmax(x_nc)\nexpected_nc = torch.softmax(x_nc, dim=1)\nassert torch.allclose(y_nc, expected_nc, atol=1e-5), \"non-contiguous rows failed\"\n\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 15 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 243 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "inf#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: mismatch 181x781 scale=1.0"
+    },
+    {
+     "op": "drop_max_subtract",
+     "site": "max#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: numerical edge cases failed"
+    }
+   ]
+  },
+  "layernorm": {
+   "accepted": false,
+   "tries": 4,
+   "test": "import torch\nimport math\n\n# Assume the kernel _layer_norm_fwd_fused and check_full, check_strided, check_constant, check_large, check_eps_zero, check_eps_zero are defined in the environment\n# This script fixes the \"Boolean value of Tensor with more than one value is ambiguous\" errors\n# by replacing `assert tensor_bool` with `assert tensor_bool.all()` or `torch.testing.assert_close`.\n\ndef check_full(M, N, eps=1e-5, shift=0.0, atol=1e-2, rtol=0):\n    \"\"\"Run kernel directly and compare Y, Mean, Rstd against PyTorch reference (biased variance).\"\"\"\n    torch.manual_seed(0)\n    x = -2.3 + 0.5 * torch.randn(M, N) + shift\n    w = torch.rand(N)\n    b = torch.rand(N)\n    y = torch.empty_like(x)\n    mean = torch.empty((M,), dtype=torch.float32)\n    rstd = torch.empty((M,), dtype=torch.float32)\n    _layer_norm_fwd_fused[(M,)](x, y, w, b, mean, rstd, x.stride(0), N, eps, BLOCK_SIZE=1024)\n    ref_y = torch.nn.functional.layer_norm(x, (N,), w, b, eps)\n    ref_mean = x.mean(dim=1, dtype=torch.float32)\n    ref_var = ((x - ref_mean.unsqueeze(1)) ** 2).mean(dim=1, dtype=torch.float32)\n    ref_rstd = 1 / torch.sqrt(ref_var + eps)\n    \n    # FIX: Use torch.testing.assert_close which raises AssertionError on mismatch\n    torch.testing.assert_close(y, ref_y, rtol=rtol, atol=atol, msg=f\"Y mismatch {M}x{N}\")\n    torch.testing.assert_close(mean, ref_mean, rtol=rtol, atol=atol, msg=f\"Mean mismatch {M}x{N}\")\n    torch.testing.assert_close(rstd, ref_rstd, rtol=rtol, atol=atol, msg=f\"Rstd mismatch {M}x{N}\")\n\n# 1. Tail handling: N not multiple of BLOCK_SIZE (1024)\ncheck_full(4, 1)          # N=1 (minimal tail)\ncheck_full(4, 2)          # N=2\ncheck_full(4, 1023)       # N=1023 (tail < BLOCK_SIZE)\ncheck_full(4, 1025)       # N=1025 (tail = 1)\ncheck_full(4, 2048)       # N=2048 (exact multiple)\ncheck_full(4, 3000)       # N=3000 (multiple tails)\n\n# 2. Non-contiguous input (stride test)\ndef check_strided():\n    torch.manual_seed(0)\n    base = torch.randn(10, 1024)\n    x = base[::2]                 # shape (5, 1024), stride(0) = 2 * 1024 elements\n    w = torch.rand(1024)\n    b = torch.rand(1024)\n    y = torch.empty_like(x)\n    mean = torch.empty((5,), dtype=torch.float32)\n    rstd = torch.empty((5,), dtype=torch.float32)\n    _layer_norm_fwd_fused[(5,)](x, y, w, b, mean, rstd, x.stride(0), 1024, 1e-5, BLOCK_SIZE=1024)\n    ref_y = torch.nn.functional.layer_norm(x, (1024,), w, b, 1e-5)\n    ref_mean = x.mean(dim=1, dtype=torch.float32)\n    ref_var = ((x - ref_mean.unsqueeze(1)) ** 2).mean(dim=1, dtype=torch.float32)\n    ref_rstd = 1 / torch.sqrt(ref_var + 1e-5)\n    \n    # FIX: Use torch.testing.assert_close\n    torch.testing.assert_close(y, ref_y, rtol=0, atol=1e-2, msg=\"Strided Y mismatch\")\n    torch.testing.assert_close(mean, ref_mean, rtol=0, atol=1e-2, msg=\"Strided Mean mismatch\")\n    torch.testing.assert_close(rstd, ref_rstd, rtol=0, atol=1e-2, msg=\"Strided Rstd mismatch\")\n\ncheck_strided()\n\n# 3. Numerical edge cases\ndef check_constant():\n    torch.manual_seed(0)\n    x = torch.full((4, 1024), 3.14159)\n    w = torch.rand(1024)\n    b = torch.rand(1024)\n    y = torch.empty_like(x)\n    mean = torch.empty((4,), dtype=torch.float32)\n    rstd = torch.empty((4,), dtype=torch.float32)\n    _layer_norm_fwd_fused[(4,)](x, y, w, b, mean, rstd, x.stride(0), 1024, 1e-5, BLOCK_SIZE=1024)\n    ref_y = torch.nn.functional.layer_norm(x, (1024,), w, b, 1e-5)\n    \n    # FIX: Use torch.testing.assert_close\n    torch.testing.assert_close(y, ref_y, rtol=0, atol=1e-2, msg=\"Constant Y mismatch\")\n    \n    # Check mean/rstd values explicitly\n    expected_mean = 3.14159\n    expected_rstd = 1 / math.sqrt(1e-5)\n    # FIX: Compare tensors using assert_close or check .all()\n    torch.testing.assert_close(mean, torch.full((4,), expected_mean), rtol=0, atol=1e-5, msg=\"Constant Mean mismatch\")\n    torch.testing.assert_close(rstd, torch.full((4,), expected_rstd), rtol=0, atol=1e-5, msg=\"Constant Rstd mismatch\")\n\ncheck_constant()\n\n# 3b. Large magnitude values (test fp32 accumulation range)\ndef check_large():\n    torch.manual_seed(0)\n    x = 1e4 * torch.randn(4, 1024)\n    w = torch.rand(1024)\n    b = torch.rand(1024)\n    y = torch.empty_like(x)\n    mean = torch.empty((4,), dtype=torch.float32)\n    rstd = torch.empty((4,), dtype=torch.float32)\n    _layer_norm_fwd_fused[(4,)](x, y, w, b, mean, rstd, x.stride(0), 1024, 1e-5, BLOCK_SIZE=1024)\n    ref_y = torch.nn.functional.layer_norm(x, (1024,), w, b, 1e-5)\n    # FIX: Use torch.testing.assert_close\n    torch.testing.assert_close(y, ref_y, rtol=0, atol=1e-2, msg=\"Large Y mismatch\")\n\ncheck_large()\n\n# 3c. Zero epsilon with non-zero variance\ndef check_eps_zero():\n    torch.manual_seed(0)\n    x = torch.randn(4, 1024)\n    w = torch.rand(1024)\n    b = torch.rand(1024)\n    y = torch.empty_like(x)\n    mean = torch.empty((4,), dtype=torch.float32)\n    rstd = torch.empty((4,), dtype=torch.float32)\n    _layer_norm_fwd_fused[(4,)](x, y, w, b, mean, rstd, x.stride(0), 1024, 0.0, BLOCK_SIZE=1024)\n    ref_y = torch.nn.functional.layer_norm(x, (1024,), w, b, 0.0)\n    # FIX: Use torch.testing.assert_close\n    torch.testing.assert_close(y, ref_y, rtol=0, atol=1e-2, msg=\"Eps=0 Y mismatch\")\n\ncheck_eps_zero()\n\nprint(\"All tests passed.\")\n",
+   "mutants": []
+  },
+  "matmul": {
+   "accepted": true,
+   "tries": 1,
+   "test": "import torch\n\ndef run_test(M, N, K, msg):\n    torch.manual_seed(42)\n    a = torch.randn((M, K), dtype=torch.float16)\n    b = torch.randn((K, N), dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    out = matmul(a, b)\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), f\"{msg}: mismatch {M}x{N}x{K}\"\n\n# 1. Non-multiples of BLOCK_SIZE_M (64) and BLOCK_SIZE_N (64)\nrun_test(100, 100, 100, \"non-multiple M,N\")\nrun_test(65, 128, 32, \"M=65, N=128\")\nrun_test(128, 65, 32, \"M=128, N=65\")\nrun_test(10, 20, 30, \"small M,N,K\")\n\n# 2. K not multiple of BLOCK_SIZE_K (32)\nrun_test(64, 64, 33, \"K=33\")\nrun_test(64, 64, 1, \"K=1\")\nrun_test(64, 64, 31, \"K=31\")\n\n# 3. Non-contiguous inputs (transposed, strides)\ndef test_strided():\n    torch.manual_seed(123)\n    # row-major but with larger leading stride\n    a_base = torch.randn((100, 100), dtype=torch.float16)\n    b_base = torch.randn((100, 100), dtype=torch.float16)\n    a = a_base[:, ::2]  # stride (100, 2) -> shape (100, 50)\n    b = b_base[::2, :]  # stride (2, 100) -> shape (50, 100)\n    # matmul expects (M,K) @ (K,N) -> (M,N)\n    ref = torch.matmul(a, b)\n    out = matmul(a, b)\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), \"strided input mismatch\"\n\ntest_strided()\n\n# 4. Very small matrices (smaller than block sizes)\nrun_test(1, 1, 1, \"1x1x1\")\nrun_test(1, 64, 64, \"1x64x64\")\nrun_test(64, 1, 64, \"64x1x64\")\nrun_test(64, 64, 1, \"64x64x1\")\n\n# 5. Larger but still under 100k elements, non-multiples\nrun_test(200, 150, 120, \"200x150x120\")\nrun_test(300, 200, 100, \"300x200x100\")\n\n# 6. Test with different random seeds to catch uninitialized memory issues\nfor seed in [1, 2, 3, 4, 5]:\n    torch.manual_seed(seed)\n    a = torch.randn((73, 97), dtype=torch.float16)\n    b = torch.randn((97, 55), dtype=torch.float16)\n    ref = torch.matmul(a, b)\n    out = matmul(a, b)\n    assert torch.allclose(out, ref, atol=0.125, rtol=0), f\"seed {seed} mismatch\"\n\nprint(\"All additional tests passed\")  # only printed if all asserts pass\n\n",
+   "mutants": [
+    {
+     "op": "drop_load_mask",
+     "site": "load#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 28 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_load_mask",
+     "site": "load#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1792 active lane(s) outside every kernel ten"
+    },
+    {
+     "op": "drop_store_mask",
+     "site": "store#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1792 active lane(s) outside every kernel te"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#1",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 64 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#2",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 64 active lane(s) outside every kernel tens"
+    },
+    {
+     "op": "mask_lt_to_le",
+     "site": "lt#3",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "load_other_changed",
+     "site": "zero#1",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "acc_dtype_fp16",
+     "site": "acc#0",
+     "T3": "SURVIVED",
+     "T3B": "SURVIVED",
+     "detail": ""
+    },
+    {
+     "op": "k_loop_floor_div",
+     "site": "kloop#0",
+     "T3": "KILLED",
+     "T3B": "KILLED",
+     "detail": "AssertionError: non-multiple M,N: mismatch 100x100x100"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#0",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 32 active lane(s) outside every kernel tenso"
+    },
+    {
+     "op": "drop_modulo_wrap",
+     "site": "mod#1",
+     "T3": "SURVIVED",
+     "T3B": "KILLED",
+     "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 28 active lane(s) outside every kernel tenso"
+    }
+   ]
+  }
+ },
+ "total_tokens": 41478
+}

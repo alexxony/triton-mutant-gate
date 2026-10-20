@@ -1,0 +1,22 @@
+finish_reason=stop
+usage={'completion_tokens': 4514, 'prompt_tokens': 1471, 'total_tokens': 5985, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 4272, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1471}
+---
+
+
+```python
+# Additional test to distinguish the mutant: large values + enough tiles to overflow fp16 accumulation
+def check_large_shift_many_tiles():
+    M, N = 2, 8192          # N >= BLOCK_SIZE ensures multiple iterations per lane
+    eps = 1e-5
+    shift = 1e4             # large activation values
+    torch.manual_seed(0)
+    x = -2.3 + 0.5 * torch.randn(M, N) + shift   # values ~1e4
+    w = torch.rand(N)
+    b = torch.rand(N)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y = layer_norm(x, w, b, eps)
+    # The original kernel should match PyTorch's reference; the mutant will diverge due to fp16 overflow
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), f"mismatch with large shift and many tiles {M}x{N}"
+
+check_large_shift_many_tiles()
+```

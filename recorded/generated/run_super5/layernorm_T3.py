@@ -1,0 +1,6 @@
+check(1, 1, eps=1e-5, shift=0.0)
+check(1, 1023, eps=1e-5, shift=0.0)
+check(1, 1025, eps=1e-5, shift=0.0)
+check(1, 2048, eps=1e-5, shift=0.0)
+check(2, 8192, eps=0.0, shift=10.0)
+check(4, 4096, eps=1e-8, shift=-5.0)

@@ -1,0 +1,14 @@
+finish_reason=stop
+usage={'completion_tokens': 478, 'prompt_tokens': 1176, 'total_tokens': 1654, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 273, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1176}
+---
+
+
+```python
+# Additional tests to stress boundary/tail handling and numerical edge cases
+check(1, 1, eps=1e-5, shift=0.0)               # smallest possible tensor
+check(1, 1023, eps=1e-5, shift=0.0)            # just under BLOCK_SIZE
+check(1, 1025, eps=1e-5, shift=0.0)            # just over BLOCK_SIZE
+check(1, 2048, eps=1e-5, shift=0.0)            # exact multiple of BLOCK_SIZE
+check(2, 8192, eps=0.0, shift=10.0)            # zero eps with large variance via shift
+check(4, 4096, eps=1e-8, shift=-5.0)           # tiny eps, negative shift
+```

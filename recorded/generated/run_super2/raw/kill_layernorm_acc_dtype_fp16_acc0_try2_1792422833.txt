@@ -1,0 +1,26 @@
+finish_reason=stop
+usage={'completion_tokens': 2652, 'prompt_tokens': 1917, 'total_tokens': 4569, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 2326, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1917}
+---
+
+
+```python
+def test_cancellation_error():
+    """Create a case where the true mean is zero but low‑precision (float16) accumulation
+    produces a noticeable bias, causing the layer‑norm output to differ."""
+    M, N = 2, 8192               # total elements = 16 384 (< 2 M)
+    eps = 1e-5
+    half = N // 2
+    val = 7.5                     # chosen so that N*val < float16 max (≈65504) but >2048
+    x = torch.full((M, N), val, dtype=torch.float32)
+    x[:, half:] = -val            # first half +val, second half –val → true mean = 0
+    w = torch.ones(N, dtype=torch.float32)   # weight = 1
+    b = torch.zeros(N, dtype=torch.float32)  # bias = 0
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y   = layer_norm(x, w, b, eps)
+    # The mutant’s float16 accumulator yields a biased mean → output mismatch
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"float16 mean accumulation bias detected for {M}x{N}"
+
+# Run the new test
+test_cancellation_error()
+```

@@ -1,0 +1,58 @@
+{
+ "run_id": 1792423634,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 8669,
+   "log": [
+    "Your test FAILS on the original kernel (AssertionError: mutant should produce a different softmax; this will fail on the mutant). It must pass on the original.",
+    "accepted"
+   ],
+   "test": "# Distinguishing test: a row containing a large value that would overflow in the mutant\nx = torch.tensor([[100.0, 0.0, 0.0]], dtype=torch.float32)   # tiny tensor, < 2\u202fM elements\n\n# Reference softmax (PyTorch) \u2013 the ground\u2011truth\nref = torch.softmax(x, dim=-1)\n\n# Original kernel must agree with the reference and produce only finite numbers\ny_orig = softmax(x)\nassert torch.allclose(y_orig, ref, atol=1e-5, rtol=1e-5), \"original kernel should match torch.softmax\"\nassert torch.all(torch.isfinite(y_orig)), \"original kernel output must be finite\"\n\n# The same input would cause the mutant to produce a NaN (because exp(100) overflows),\n# so the finiteness check above will fail on the mutant, while it passes on the original.\n",
+   "mutant_failure": "AssertionError: original kernel should match torch.softmax"
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5951,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 12201,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "matmul",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 5881,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  }
+ ]
+}

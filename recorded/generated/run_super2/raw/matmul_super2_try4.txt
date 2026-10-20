@@ -1,0 +1,9 @@
+finish_reason=stop
+usage={'completion_tokens': 272, 'prompt_tokens': 1753, 'total_tokens': 2025, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 180, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1753}
+---
+
+
+```python
+for M, N, K in [(1, 1, 1), (10, 10, 10), (33, 33, 33), (65, 65, 30), (80, 40, 20), (90, 30, 30)]:
+    check(M, N, K)
+```

@@ -1,0 +1,6 @@
+finish_reason=stop
+usage={'completion_tokens': 858, 'prompt_tokens': 1495, 'total_tokens': 2353, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 789, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1495}
+---
+
+
+EQUIVALENT – the change only alters the value loaded for out‑of‑bounds columns (where `mask` is false), but those values are never used to compute the stored output because the subsequent computation and store are guarded by the same mask, so the kernel’s observable results remain identical for any valid input.

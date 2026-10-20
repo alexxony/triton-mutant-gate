@@ -1,0 +1,73 @@
+{
+ "run_id": 1792456124,
+ "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+ "results": [
+  {
+   "kernel": "softmax",
+   "op": "drop_max_subtract",
+   "site": "max#0",
+   "outcome": "killed",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 4141,
+   "log": [
+    "accepted"
+   ],
+   "test": "# Distinguishing test: large values that overflow in the mutant but not in the original\ndef check_large(m, n, scale=100.0):\n    torch.manual_seed(0)\n    # All entries are a large constant that would overflow if not shifted by the max\n    x = torch.full((m, n), scale, dtype=torch.float32)\n    # Reference softmax (stable)\n    ref = torch.softmax(x, dim=1)\n    # Original kernel must match the reference\n    y = softmax(x)\n    assert torch.allclose(y, ref, atol=1e-5), f\"large {m}x{n} scale={scale}\"\n# Execute the test \u2013 it passes for the original kernel and fails for the mutant\ncheck_large(1, 5, scale=100.0)\n",
+   "mutant_failure": "AssertionError: large 1x5 scale=100.0"
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#1",
+   "outcome": "claimed_equivalent",
+   "tries": 1,
+   "syntax_errors": 0,
+   "tokens": 2051,
+   "log": [
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "load_other_changed",
+   "site": "zero#2",
+   "outcome": "claimed_equivalent",
+   "tries": 2,
+   "syntax_errors": 0,
+   "tokens": 11676,
+   "log": [
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "model answered EQUIVALENT"
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#0",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 19822,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  },
+  {
+   "kernel": "layernorm",
+   "op": "acc_dtype_fp16",
+   "site": "acc#1",
+   "outcome": "failed",
+   "tries": 3,
+   "syntax_errors": 0,
+   "tokens": 19003,
+   "log": [
+    "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+    "Your test PASSES on the mutant too, so it does not tell them apart.",
+    "Your test PASSES on the mutant too, so it does not tell them apart."
+   ]
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+finish_reason=stop
+usage={'completion_tokens': 722, 'prompt_tokens': 2177, 'total_tokens': 2899, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 473, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2177}
+---
+
+
+```python
+def _test_large_K_accumulator_error():
+    # Use a large inner dimension so that FP16 accumulation error exceeds the test tolerance.
+    M, N, K = 64, 64, 1024   # a: (64,1024), b: (1024,64), c: (64,64)
+    torch.manual_seed(2025)
+    a = torch.randn((M, K), dtype=torch.float16)
+    b = torch.randn((K, N), dtype=torch.float16)
+    ref = torch.matmul(a, b)          # reference uses FP32 accumulation
+    got = matmul(a, b)                # kernel under test (mutant uses FP16 accumulator)
+    # Same tolerance as the original sanity check.
+    assert torch.allclose(got, ref, atol=0.125, rtol=0), \
+        f"FP16 accumulator test failed for shape {M}x{N}x{K}"
+
+# Append after the existing checks.
+_test_large_K_accumulator_error()
+```

@@ -1,0 +1,21 @@
+finish_reason=stop
+usage={'completion_tokens': 1031, 'prompt_tokens': 1099, 'total_tokens': 2130, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 802, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1099}
+---
+
+
+```python
+# Additional test that distinguishes the mutant (missing max subtraction)
+def _test_overflow():
+    torch.manual_seed(42)
+    # Choose a scale large enough to push some elements beyond exp overflow (~88 for float32)
+    m, n, scale = 4, 32, 120.0   # 4*32=128 elements << 2M limit
+    x = torch.randn(m, n, dtype=torch.float32) * scale
+    y = softmax(x)               # kernel under test
+    ref = torch.softmax(x, dim=1)  # reference using PyTorch (numerically stable)
+    # The mutant will produce NaN or wildly incorrect values due to overflow,
+    # causing the allclose check to fail.
+    assert torch.allclose(y, ref, atol=1e-5, rtol=1e-5), \
+        f"Overflow test failed: m={m}, n={n}, scale={scale}"
+
+_test_overflow()
+```

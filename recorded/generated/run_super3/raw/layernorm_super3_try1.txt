@@ -1,0 +1,39 @@
+finish_reason=stop
+usage={'completion_tokens': 2198, 'prompt_tokens': 934, 'total_tokens': 3132, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1791, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 934}
+---
+
+
+```python
+# Additional tests targeting boundary/tail handling, numerical edge cases, and special inputs
+
+def check_const(M, N, val=1.0, eps=1e-5):
+    """Test a constant input (zero variance). Expected output equals the bias."""
+    torch.manual_seed(0)
+    x = torch.full((M, N), val, dtype=torch.float32)
+    w = torch.rand(N)
+    b = torch.rand(N)
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y = layer_norm(x, w, b, eps)
+    # For constant input, normalized values are zero => y = b
+    assert torch.allclose(y, b, atol=1e-5, rtol=0), f"constant input mismatch {M}x{N}"
+    # Also verify against PyTorch's reference implementation
+    assert torch.allclose(y, ref, atol=1e-5, rtol=0), f"constant vs ref mismatch {M}x{N}"
+
+# 1. Minimal feature dimension
+check(2, 1)
+
+# 2. Feature size just below the block size (tests tail handling in the loops)
+check(2, 1023)
+
+# 3. Feature size exactly equal to the block size (tests clean iteration with no remainder)
+check(2, 1024)
+
+# 4. Feature size above the block size with a remainder (tests multiple iterations + tail)
+check(2, 2049)
+
+# 5. Zero‑variance input (all elements identical) – checks numerical stability when variance ≈ 0
+check_const(3, 5, val=-2.5)
+
+# 6. Large activation values (tests potential overflow / loss of precision in mean/variance)
+check(2, 128, shift=1e4)
+```

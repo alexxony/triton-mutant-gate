@@ -1,0 +1,23 @@
+finish_reason=stop
+usage={'completion_tokens': 1452, 'prompt_tokens': 2285, 'total_tokens': 3737, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1200, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 2285}
+---
+
+
+```python
+def test_mean_accum_overflow():
+    """Force the float16 mean accumulator to overflow, producing NaNs in the mutant."""
+    M, N = 1, 8192                # 8192 elements (< 2M limit)
+    val = 30000.0                 # large enough that repeated addition overflows float16
+    x = torch.full((M, N), val, dtype=torch.float32)
+    w = torch.ones(N, dtype=torch.float32)
+    b = torch.zeros(N, dtype=torch.float32)
+    eps = 1e-5
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y   = layer_norm(x, w, b, eps)
+    # The mutant’s float16 accumulator overflows → NaN/Inf output, causing a clear mismatch
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"float16 mean accumulator overflow detected for {M}x{N}"
+
+# Run the new test
+test_mean_accum_overflow()
+```

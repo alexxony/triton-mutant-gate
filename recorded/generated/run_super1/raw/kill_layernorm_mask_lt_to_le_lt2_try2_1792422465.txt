@@ -1,0 +1,26 @@
+finish_reason=stop
+usage={'completion_tokens': 5212, 'prompt_tokens': 1747, 'total_tokens': 6959, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 4927, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1747}
+---
+
+
+```python
+def test_variance_tail_bug():
+    """Catch the off‑by‑one error in the variance loop when N is not a multiple of BLOCK_SIZE."""
+    torch.manual_seed(123)
+    M, N = 1, 3                     # N=3 < BLOCK_SIZE → tail iteration touches index == N
+    eps = 1e-5
+    # Input with non‑zero mean and non‑zero deviations
+    x = torch.tensor([[0.0, 1.0, 2.0]], dtype=torch.float32)
+    w = torch.ones(N, dtype=torch.float32)   # identity scaling
+    b = torch.zeros(N, dtype=torch.float32)  # no shift
+
+    y_triton = layer_norm(x, w, b, eps)
+    y_ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+
+    # The bug changes the variance, so the outputs should differ noticeably
+    assert not torch.allclose(y_triton, y_ref, atol=1e-3, rtol=0), \
+        f"Bug not detected: triton={y_triton}, ref={y_ref}"
+
+# Append after the existing sanity checks
+test_variance_tail_bug()
+```

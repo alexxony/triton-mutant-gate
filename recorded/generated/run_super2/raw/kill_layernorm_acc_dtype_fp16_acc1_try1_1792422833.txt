@@ -1,0 +1,24 @@
+finish_reason=stop
+usage={'completion_tokens': 2142, 'prompt_tokens': 1612, 'total_tokens': 3754, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1850, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1612}
+---
+
+
+```python
+def test_large_magnitude_detects_fp16_accumulator():
+    """Large input values make the fp16 variance accumulator overflow/inaccurate,
+    causing the mutant to deviate from the reference layer norm."""
+    M, N = 2, 2000          # 2 × 2000 = 4000 elements (< 2 M)
+    eps = 1e-5
+    # Large magnitude inputs so that x*x can exceed fp16 max (~65504)
+    x = 500.0 * torch.randn(M, N, dtype=torch.float32)
+    # Use reasonably sized weight/bias so the reference output is not tiny
+    w = torch.randn(N, dtype=torch.float32)
+    b = torch.randn(N, dtype=torch.float32)
+
+    ref = torch.nn.functional.layer_norm(x, (N,), w, b, eps)
+    y   = layer_norm(x, w, b, eps)
+
+    # Original kernel should match ref; mutant will not (difference >> 1e-2)
+    assert torch.allclose(y, ref, atol=1e-2, rtol=0), \
+        f"LayerNorm mismatch for large magnitude inputs (M={M}, N={N})"
+```

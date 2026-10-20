@@ -1,0 +1,7 @@
+finish_reason=stop
+usage={'completion_tokens': 1477, 'prompt_tokens': 1755, 'total_tokens': 3232, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 1349, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1755}
+---
+
+
+EQUIVALENT
+The mutation only changes the storage type of the intermediate accumulator `_mean` from `float32` to `float16`, but all values fed into it are first cast to `float32` (`a = ... .to(tl.float32)`), and the final mean and variance are computed via reductions that produce `float32` results. Consequently, any rounding introduced by the `float16` storage is absorbed by the subsequent higher‑precision operations and remains within the kernel’s existing tolerance, so no input can produce a distinguishable difference under the given test criteria.

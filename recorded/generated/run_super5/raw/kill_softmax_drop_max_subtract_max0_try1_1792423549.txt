@@ -1,0 +1,22 @@
+finish_reason=stop
+usage={'completion_tokens': 849, 'prompt_tokens': 1203, 'total_tokens': 2052, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 640, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1203}
+---
+
+
+```python
+def test_large_values():
+    """Test with large input values that cause overflow if max subtraction is omitted."""
+    torch.manual_seed(0)
+    # Scale large enough that raw values exceed ~710 (exp overflow in float64)
+    x = torch.randn(4, 4, dtype=torch.float32) * 1e4   # typical values ~ few thousand
+    y = softmax(x)
+    y_ref = torch.softmax(x, dim=1)
+    # The original kernel (with max subtraction) should match the reference;
+    # the mutant (without subtraction) will produce Inf/NaN and fail this assert.
+    assert torch.allclose(y, y_ref, atol=1e-5), (
+        f"softmax mismatch on large values: max abs diff = {(y - y_ref).abs().max().item()}"
+    )
+
+# Append the new test after the existing sanity checks
+test_large_values()
+```

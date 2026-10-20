@@ -1,0 +1,20 @@
+finish_reason=stop
+usage={'completion_tokens': 1142, 'prompt_tokens': 1823, 'total_tokens': 2965, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 928, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0, 'created_cache_tokens': 0, 'multimodal_tokens': None}, 'prompt_cache_hit_tokens': 0, 'prompt_cache_miss_tokens': 1823}
+---
+
+
+```python
+def test_accumulator_type():
+    # Use a large K to amplify the error when accumulating in float16
+    M, N, K = 64, 64, 2048
+    torch.manual_seed(0)
+    a = torch.ones((M, K), dtype=torch.float16)   # all‑ones matrix
+    b = torch.ones((K, N), dtype=torch.float16)   # all‑ones matrix
+    ref = torch.matmul(a, b)                      # PyTorch accumulates in higher precision
+    out = matmul(a, b)                            # Triton kernel under test
+    # The mutant accumulates in float16 → large deviation from the reference
+    assert torch.allclose(out, ref, atol=0.125, rtol=0), \
+        f"accumulator type mismatch: max diff {torch.max(torch.abs(out - ref)).item()}"
+
+test_accumulator_type()
+```
