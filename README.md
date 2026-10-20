@@ -7,7 +7,7 @@ is trusted without running the code.
 
 Built for the Nebius x NVIDIA Global AI Hackathon, track *Coding and Agentic Engineering*.
 
-- **Replay demo:** `demo/index.html` (static page of recorded runs; public URL to be added at publication)
+- **Replay demo:** https://alexxony.github.io/triton-mutant-gate/ (static page of recorded runs, source `demo/index.html`; nothing runs in the browser)
 - **Recorded results and limits:** [docs/RESULTS.md](docs/RESULTS.md) · **Prior art:** [docs/PRIOR_ART.md](docs/PRIOR_ART.md)
 
 ## How it works
