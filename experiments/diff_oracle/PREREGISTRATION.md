@@ -95,7 +95,7 @@ One harness change: the sandbox shell exports `PYTHONHASHSEED=0` next to `TRITON
 same classes, same predictions. Run 2 is reported next to run 1, and run 1's rows are kept. Matmul's predictions stay as written
 (acc#0 DIFFERS at 80%; the two `other=` survivors IDENTICAL as the positive control).
 
-## Run 2 (2026-10-21 KST, `PYTHONHASHSEED=0`): results
+## Run 2 (2026-10-20 KST evening, `PYTHONHASHSEED=0`): results
 
 Raw rows: `results.json`. 40 mutants: 31 killed -> all `MUTANT_FAILED`; 9 survivors -> 6 `IDENTICAL`, 3 `DIFFERS`; no `UNSTABLE`, no `ERROR`.
 The sandbox API returned HTTP 500 on image lookup once (run aborted before any measurement) and was retried; no result was retried.

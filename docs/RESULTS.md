@@ -84,6 +84,33 @@ disagreement is matmul `acc_dtype_fp16`, which gave a compile error on the T4 (T
 the Triton version, not from the check. A compile verdict therefore holds for the sandbox's Triton build only. (Mutants that
 crash the interpreter, such as dropped store masks, report `CHECK_FAILED`; they are caught mutants, never survivors.)
 
+## Output oracle (`--diff-oracle`)
+
+Until now the "equivalent" verdicts rested on the model's word, plus a one-off offline differential study (8 survivors, 4 to 6
+hand-written inputs each, `recorded/results/results_survivor_classification.json`) that was not part of the tool. `--diff-oracle` moves
+that step into the tool and makes it generic: it hooks `InterpretedFunction.run`, keeps a copy of every tensor argument after every
+launch, runs the original twice and the survivor once with the same seeds, and compares bit for bit. No model is called.
+
+Pre-registered in `experiments/diff_oracle/PREREGISTRATION.md` (committed before the first run), validated on the 44 programs of
+the T4 study. Result (run 2): all 31 killed mutants fail their run (`MUTANT_FAILED`); the 9 survivors split into 6 `IDENTICAL` and
+3 `DIFFERS`. Of 5 predictions made in advance, 4 were right; the wrong one is layernorm `mask_lt_to_le` lt#2 (guessed identical, it is not).
+
+| survivor | oracle | what moved |
+|---|---|---|
+| layernorm `load_other_changed` zero#1, zero#2; matmul zero#0, zero#1 | identical | |
+| layernorm `acc_dtype_fp16` acc#0, acc#1 | identical | (these do not compile for CUDA, see above) |
+| softmax `drop_max_subtract` | differs | output: max abs 1.2e-7, hidden by the test's tolerance |
+| matmul `acc_dtype_fp16` | differs | `c_ptr`: 176,378 elements, max abs 0.125 |
+| layernorm `mask_lt_to_le` lt#2 | differs | `Rstd`: one element moves by 316; the generated test does not catch it and stage 2 found no accepted test either |
+
+Against the recorded stage-2 outcomes: the 5 survivors Nemotron called equivalent are all `IDENTICAL` (no contradiction), the 2
+it killed with a verified test are both `DIFFERS`. That is 9 survivors on 4 kernels, so it supports the model's answers on these cases
+and says nothing about kernels in general.
+
+Two things went wrong on the way and are kept in the pre-registration: run 1 left the matmul original unstable (the generated test seeds
+itself with `hash(str)`, which changes per process; the sandbox now sets `PYTHONHASHSEED=0`), and the sandbox API returned HTTP 500 once
+before any measurement (retried). `DIFFERS` is reported on its own line and is not counted as a kill.
+
 ## Known limits
 
 - The interpreter is not a compiler. Triton's own documentation lists interpreter limitations, and upstream issues
@@ -91,6 +118,7 @@ crash the interpreter, such as dropped store masks, report `CHECK_FAILED`; they 
   survivors are not valid Triton programs. `--compile-check` finds compile errors only; whether a compiled run would pass or
   fail the test (for example dropped masks, which the GPU does not flag) is still not checked.
 - Mutation operators are a fixed set of rewrite rules, not real bug reports.
-- "Equivalent" is the model's judgement plus sampled inputs.
+- "Equivalent" is the model's judgement; `--diff-oracle` adds a check that the outputs are bit-identical on the launches the test makes.
+  That is evidence on those inputs only, and a different input shape can still tell the two apart.
 - Four kernels, one tutorial-style kernel each; no claim about kernels in general.
 - Cost of the full study: Super 5 repeats used 343,276 tokens (about $0.17 at list price).

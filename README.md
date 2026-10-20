@@ -55,6 +55,10 @@ Output goes to `mutant-gate-out/<kernel>/`: `report.md` (summary table), `report
 (every model reply). Options: `--model`, `--tries`, `--no-close` (skip stage 2), `--compile-check`, `--image`, `--out`.
 `--compile-check` compiles every launch of each survivor for CUDA (sm_75, no GPU needed, inside the same sandbox) and sets
 aside survivors that are not valid GPU programs, so Nemotron is not asked to write tests for them.
+`--diff-oracle` (no model involved) runs each survivor next to the original with the same seeds and compares every tensor after
+every kernel launch: the report then says either "outputs identical on all N launches" or "outputs differ in `Rstd` (max abs
+316), the test's tolerance hides it". It sits next to Nemotron's `EQUIVALENT` answer; it does not replace it, and "identical"
+means identical on the launches the test makes, not a proof ([docs/RESULTS.md](docs/RESULTS.md#output-oracle---diff-oracle)).
 Tests (offline): `uv run pytest`.
 
 Example output for `examples/kernels/layernorm.py` (one real run): 18 bugs planted, 13 caught by the generated test,

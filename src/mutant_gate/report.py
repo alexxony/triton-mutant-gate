@@ -7,6 +7,19 @@ OUTCOME_TEXT = {
 }
 
 
+def oracle_text(o):
+    """One line for the output oracle's verdict on a survivor (no model involved)."""
+    c = o["class"]
+    if c == "IDENTICAL":
+        return f"outputs identical on all {o.get('launches', '?')} launches"
+    if c == "DIFFERS":
+        w = o.get("worst") or o.get("first")
+        if not w:
+            return f"outputs differ ({o.get('why', '')})"
+        return f"outputs differ in `{w['arg']}` (launch {w['launch']}, max abs {w['max_abs']:.3g}, max rel {w['max_rel']:.3g}), the test's tolerance hides it"
+    return f"output oracle: {c.lower()}"
+
+
 def markdown(report):
     lines = [f"# mutant-gate report: {report['kernel']}", "",
              f"Model `{report['model']}`, {report['mutants_planted']} mutants planted, "
@@ -23,6 +36,8 @@ def markdown(report):
         verdict = "survived" if m["T3B"] == "SURVIVED" else "caught"
         if m.get("compile", {}).get("status") == "COMPILE_ERROR":
             verdict, follow = "survived, but does not compile", f"not a test gap: {m['compile']['detail']}"
+        if m.get("oracle"):
+            follow = (follow + "; " if follow else "") + oracle_text(m["oracle"])
         lines.append(f"| {m['op']} @ {m['site']} | {verdict} | {follow} |")
     compiled = ("Survivors were also compiled for CUDA (sandbox Triton build, no GPU); a compiled run's pass/fail is not checked."
                 if report.get("compile_check") else "Compilation for a GPU is not checked (use --compile-check).")

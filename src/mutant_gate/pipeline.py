@@ -86,6 +86,28 @@ async def compile_survivors(sb, src, test, muts, survivors, log, parallel=8):
     return True
 
 
+async def diff_survivors(sb, src, test, muts, survivors, log, parallel=6):
+    """Optional step: run the original and each survivor side by side and compare every kernel launch's tensors (no model).
+    Sets m['oracle'] = {class: IDENTICAL / DIFFERS / UNSTABLE / ...}. DIFFERS means the survivor moves outputs but the test's
+    tolerance hides it; IDENTICAL means identical on the launches the test makes (not a proof of equivalence)."""
+    codes = {(op, site): c for op, site, c in muts}
+    original = full_program(src, test)
+    sem = asyncio.Semaphore(parallel)
+
+    async def one(m):
+        async with sem:
+            try:
+                m["oracle"] = await sb.diff_check(original, full_program(codes[(m["op"], m["site"])], test))
+            except Exception as e:   # the oracle is extra evidence, a sandbox hiccup must not lose the run
+                m["oracle"] = {"class": "ERROR", "why": f"{type(e).__name__}: {str(e)[:100]}"}
+
+    await asyncio.gather(*[one(m) for m in survivors])
+    counts = {}
+    for m in survivors:
+        counts[m["oracle"]["class"]] = counts.get(m["oracle"]["class"], 0) + 1
+    log("output oracle: " + ", ".join(f"{n} {c}" for c, n in sorted(counts.items())))
+
+
 async def close_survivor(sb, src, test, op, site, mut_code, model, tries, raw_dir, run_id, sem):
     """Stage 2: show Nemotron the survivor's diff. Outcome: killed (verified by execution) / claimed_equivalent / failed."""
     mhead = split_script(mut_code)[0]
@@ -130,7 +152,7 @@ async def close_survivor(sb, src, test, op, site, mut_code, model, tries, raw_di
     return rec
 
 
-async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out_dir=None, log=print, image=None, compile_check=False):
+async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out_dir=None, log=print, image=None, compile_check=False, diff_oracle=False):
     """Full pipeline for one kernel script. Writes report.json, report.md and generated_test.py into out_dir."""
     kernel_path = Path(kernel_path)
     src, edits = cpuize(kernel_path.read_text())
@@ -161,6 +183,8 @@ async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out
         log(f"{len(report['mutants']) - len(survivors)} caught, {len(survivors)} survived")
         if compile_check and survivors:
             report["compile_check"] = await compile_survivors(sb, src, gen["test"], muts, survivors, log)
+        if diff_oracle and survivors:
+            await diff_survivors(sb, src, gen["test"], muts, survivors, log)
         # stage 2 only for survivors that are valid programs (all of them when the compile check is off or was skipped)
         targets = [m for m in survivors if m.get("compile", {}).get("status") != "COMPILE_ERROR"]
         if close and targets:
