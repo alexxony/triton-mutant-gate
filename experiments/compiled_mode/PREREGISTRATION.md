@@ -49,4 +49,37 @@ One GPU model, one Triton build, four kernels, one test per kernel. No statement
 
 ## Results
 
-(appended after the run)
+Run 2026-10-20 11:24 to 11:30 KST (6 minutes, 44 programs x 2 modes), Colab T4: `{python 3.13.15, torch 2.11.0+cu130, triton 3.6.0, CUDA 13.0, Tesla T4}`.
+The sandbox verdicts were recorded with Triton 3.8.0. Raw data: `results.json`, `run_log.txt`; mechanical evaluation: `analysis.txt`
+(produced by `analyze.py`, written before the run).
+
+Categories over the 40 mutants: compiled = 22 PASS, 15 FAIL_ASSERT, 3 COMPILE_ERROR; Colab interpreter = 20 PASS, 15 FAIL_ASSERT, 5 OTHER
+(OTHER = the interpreter without bounds checks crashed on an out-of-bounds store).
+
+| prediction | result |
+|---|---|
+| P1 original passes compiled for >= 3 of 4 kernels | holds: 4 of 4 |
+| P2 `load_other_changed` stays PASS compiled (>= 90%) | holds: 4 of 4 |
+| P3 at least one fp16-accumulator mutant detected compiled | holds: 3 of 3, all as COMPILE_ERROR (none as a numeric mismatch) |
+| P4 dropped-mask mutants not systematically easier to detect compiled | holds: `drop_load_mask` 8 of 10 PASS compiled, `drop_store_mask` 1 of 4 PASS compiled |
+
+Reading by the pre-registered table:
+
+- layernorm acc#0 and acc#1: `PASS` in the Colab interpreter, `COMPILE_ERROR` compiled, with the message `Loop-carried variable _mean has
+  initial type <['1024'], fp16> but is re-assigned to <['1024'], fp32> in loop!` (acc#1: `_var`). This is the row "detected compiled but
+  PASS in colab_interp": **confirmed interpreter blind spot for these two mutants** (the interpreter has no loop-carried type check).
+- matmul acc#0: `COMPILE_ERROR` compiled, but `FAIL_ASSERT` in the Colab interpreter, while the sandbox interpreter (Triton 3.8.0) let it
+  survive. So for this mutant the difference between sandbox and Colab interpreter is a version/machine effect; per the table it is reported
+  separately. The stored compile-error detail is only the last stderr line (a caret), so its cause was not read.
+- Detection differences between `sandbox_interp` and `colab_interp` (27 of 40 same) are dominated by the bounds checks that only the sandbox
+  run had; they are not a compilation effect.
+
+Post-hoc observations (not pre-registered):
+
+- Of the 9 mutants that survived in the sandbox interpreter, 3 are not valid Triton programs on a compiled run (the fp16 accumulators), 4 stay
+  PASS in every mode (`load_other_changed`, consistent with the earlier bit-identical evidence of equivalence), and 2 stay PASS in every mode
+  and are not equivalent-looking (softmax `drop_max_subtract`, layernorm `mask_lt_to_le` lt#2): the real test gaps.
+- One mutant is detected only compiled (layernorm `mask_lt_to_le` lt#3).
+
+Limits: one GPU model, Triton 3.6.0 (sandbox: 3.8.0), four kernels, one test per kernel, single run per cell. No statement about other
+hardware, versions or kernels.

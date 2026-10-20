@@ -1,0 +1,56 @@
+versions: {'python': '3.13.15', 'torch': '2.11.0+cu130', 'triton': '3.6.0', 'cuda_and_gpu': '13.0 Tesla T4'}
+
+Original kernel with the test (compiled, colab_interp):
+  vecadd     ('PASS', 'PASS')
+  softmax    ('PASS', 'PASS')
+  layernorm  ('PASS', 'PASS')
+  matmul     ('PASS', 'PASS')
+P1 (original passes compiled for >=3 of 4): 4/4 -> holds
+
+mutants with a usable compiled baseline: 40 of 40
+
+result categories per mode (all mutants):
+  colab_compiled {'PASS': 22, 'FAIL_ASSERT': 15, 'COMPILE_ERROR': 3}
+  colab_interp {'PASS': 20, 'OTHER': 5, 'FAIL_ASSERT': 15}
+
+agreement of detection (detected = not PASS), usable mutants:
+  sandbox_interp vs colab_interp: 27/40 same
+  colab_interp vs colab_compiled: 32/40 same
+  sandbox_interp vs colab_compiled: 21/40 same
+
+mutants whose detection differs between modes (usable):
+  vecadd     drop_load_mask       load#0   sandbox=det colab_interp=PASS compiled=PASS 
+  vecadd     drop_load_mask       load#1   sandbox=det colab_interp=PASS compiled=PASS 
+  vecadd     drop_store_mask      store#0  sandbox=det colab_interp=OTHER compiled=PASS 
+  vecadd     mask_lt_to_le        lt#0     sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  drop_load_mask       load#1   sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  drop_load_mask       load#2   sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  drop_load_mask       load#3   sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  drop_load_mask       load#4   sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  mask_lt_to_le        lt#1     sandbox=det colab_interp=PASS compiled=PASS 
+  layernorm  mask_lt_to_le        lt#3     sandbox=det colab_interp=PASS compiled=FAIL_ASSERT AssertionError: constant row mismatch M=4, N=1025, eps=1e-05
+  layernorm  acc_dtype_fp16       acc#0    sandbox=PASS colab_interp=PASS compiled=COMPILE_ERROR AssertionError("Loop-carried variable _mean has initial type <['1024']
+  layernorm  acc_dtype_fp16       acc#1    sandbox=PASS colab_interp=PASS compiled=COMPILE_ERROR AssertionError("Loop-carried variable _var has initial type <['1024'],
+  matmul     drop_load_mask       load#0   sandbox=det colab_interp=FAIL_ASSERT compiled=PASS 
+  matmul     drop_load_mask       load#1   sandbox=det colab_interp=FAIL_ASSERT compiled=PASS 
+  matmul     mask_lt_to_le        lt#0     sandbox=det colab_interp=PASS compiled=PASS 
+  matmul     mask_lt_to_le        lt#1     sandbox=det colab_interp=FAIL_ASSERT compiled=PASS 
+  matmul     mask_lt_to_le        lt#2     sandbox=det colab_interp=OTHER compiled=PASS 
+  matmul     acc_dtype_fp16       acc#0    sandbox=PASS colab_interp=FAIL_ASSERT compiled=COMPILE_ERROR                       ^
+  matmul     drop_modulo_wrap     mod#0    sandbox=det colab_interp=PASS compiled=PASS 
+  matmul     drop_modulo_wrap     mod#1    sandbox=det colab_interp=PASS compiled=PASS 
+
+sandbox-interpreter survivors with a usable baseline: 9
+  softmax    drop_max_subtract    max#0    colab_interp=PASS         compiled=PASS          
+  layernorm  mask_lt_to_le        lt#2     colab_interp=PASS         compiled=PASS          
+  layernorm  load_other_changed   zero#1   colab_interp=PASS         compiled=PASS          
+  layernorm  load_other_changed   zero#2   colab_interp=PASS         compiled=PASS          
+  layernorm  acc_dtype_fp16       acc#0    colab_interp=PASS         compiled=COMPILE_ERROR AssertionError("Loop-carried variable _mean has initial type
+  layernorm  acc_dtype_fp16       acc#1    colab_interp=PASS         compiled=COMPILE_ERROR AssertionError("Loop-carried variable _var has initial type 
+  matmul     load_other_changed   zero#0   colab_interp=PASS         compiled=PASS          
+  matmul     load_other_changed   zero#1   colab_interp=PASS         compiled=PASS          
+  matmul     acc_dtype_fp16       acc#0    colab_interp=FAIL_ASSERT  compiled=COMPILE_ERROR                       ^
+
+P2 (load_other_changed stays PASS compiled, >=90%): 4/4
+P3 (>=1 fp16-accumulator mutant detected compiled): 3 of 3 -> [('layernorm', 'acc#0'), ('layernorm', 'acc#1'), ('matmul', 'acc#0')]
+P4 (dropped-mask mutants, compiled categories): {'drop_load_mask': {'PASS': 8, 'FAIL_ASSERT': 2}, 'drop_store_mask': {'PASS': 1, 'FAIL_ASSERT': 3}}
