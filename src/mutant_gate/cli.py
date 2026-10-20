@@ -26,7 +26,8 @@ def cmd_run(args):
     from .pipeline import analyze   # imported here so `mutants` works without the sandbox SDK configured
 
     report = asyncio.run(analyze(args.kernel, model=args.model, tries=args.tries, close=not args.no_close,
-                                 out_dir=args.out, log=lambda s: print(s, file=sys.stderr), image=args.image))
+                                 out_dir=args.out, log=lambda s: print(s, file=sys.stderr), image=args.image,
+                                 compile_check=args.compile_check))
     return 0 if report["accepted"] else 2
 
 
@@ -54,6 +55,8 @@ def build_parser():
     r.add_argument("--model", default=DEFAULT_MODEL, help="Token Factory model id (default: %(default)s)")
     r.add_argument("--tries", type=int, default=4, help="attempts for the first test (default: %(default)s)")
     r.add_argument("--no-close", action="store_true", help="skip stage 2 (targeting the survivors)")
+    r.add_argument("--compile-check", action="store_true", help="also compile each survivor for CUDA (CPU only, no GPU needed) and "
+                   "set aside survivors that are not valid GPU programs")
     r.add_argument("--out", help="output directory (default: mutant-gate-out/<kernel name>)")
     r.add_argument("--image", help="sandbox image id (default: $MUTANT_GATE_IMAGE or the one from setup-image)")
     r.set_defaults(fn=cmd_run)

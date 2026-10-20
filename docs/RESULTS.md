@@ -71,12 +71,25 @@ replay demo were run against the original and all 40 mutants, both in the Triton
 So the interpreter-only verdict is wrong in both directions: it misses ill-typed mutants (no loop-carried type check) and a compiled
 run misses out-of-bounds reads that the instrumented interpreter catches. One GPU model, one Triton build, four kernels.
 
+## CPU compile check (`mutant-gate run --compile-check`)
+
+Triton compiles for a CUDA target without a GPU (`triton.compile` with an explicit `GPUTarget`, sm_75), so the compile errors
+above can be found inside the CPU sandbox. The script first runs under the interpreter to record every kernel launch, then each
+distinct launch is specialized the way Triton does for a real launch and compiled.
+
+Checked against the 44 programs of the T4 study (40 mutants + 4 originals; script `experiments/compiled_mode/`): 43 of 44 agree
+on "compile error or not". The two layernorm fp16-accumulator mutants fail with the same message as on the T4. The one
+disagreement is matmul `acc_dtype_fp16`, which gave a compile error on the T4 (Triton 3.6.0) and compiles in the sandbox
+(Triton 3.8.0). The same check with `triton==3.6.0` installed in the sandbox reproduces the error, so the difference comes from
+the Triton version, not from the check. A compile verdict therefore holds for the sandbox's Triton build only. (Mutants that
+crash the interpreter, such as dropped store masks, report `CHECK_FAILED`; they are caught mutants, never survivors.)
+
 ## Known limits
 
 - The interpreter is not a compiler. Triton's own documentation lists interpreter limitations, and upstream issues
   #10658 and #10291 report JIT/interpreter divergences. A compiled T4 run (above) showed that the fp16-accumulator
-  survivors are not valid Triton programs; that check is one GPU, one Triton build, and is not part of the `mutant-gate run`
-  pipeline yet (the verdicts it produces are interpreter verdicts).
+  survivors are not valid Triton programs. `--compile-check` finds compile errors only; whether a compiled run would pass or
+  fail the test (for example dropped masks, which the GPU does not flag) is still not checked.
 - Mutation operators are a fixed set of rewrite rules, not real bug reports.
 - "Equivalent" is the model's judgement plus sampled inputs.
 - Four kernels, one tutorial-style kernel each; no claim about kernels in general.

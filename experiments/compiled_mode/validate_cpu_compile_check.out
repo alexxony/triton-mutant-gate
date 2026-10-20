@@ -1,0 +1,45 @@
+vecadd     ORIGINAL           -        T4=PASS          cpu=COMPILES      
+vecadd     drop_load_mask     load#0   T4=PASS          cpu=COMPILES      
+vecadd     drop_load_mask     load#1   T4=PASS          cpu=COMPILES      
+vecadd     drop_store_mask    store#0  T4=PASS          cpu=CHECK_FAILED  
+vecadd     mask_lt_to_le      lt#0     T4=PASS          cpu=COMPILES      
+softmax    ORIGINAL           -        T4=PASS          cpu=COMPILES      
+softmax    drop_load_mask     load#0   T4=FAIL_ASSERT   cpu=COMPILES      
+softmax    drop_store_mask    store#0  T4=FAIL_ASSERT   cpu=CHECK_FAILED  
+softmax    mask_lt_to_le      lt#0     T4=FAIL_ASSERT   cpu=COMPILES      
+softmax    load_other_changed inf#0    T4=FAIL_ASSERT   cpu=COMPILES      
+softmax    drop_max_subtract  max#0    T4=PASS          cpu=COMPILES      
+layernorm  ORIGINAL           -        T4=PASS          cpu=COMPILES      
+layernorm  drop_load_mask     load#0   T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  drop_load_mask     load#1   T4=PASS          cpu=COMPILES      
+layernorm  drop_load_mask     load#2   T4=PASS          cpu=COMPILES      
+layernorm  drop_load_mask     load#3   T4=PASS          cpu=COMPILES      
+layernorm  drop_load_mask     load#4   T4=PASS          cpu=COMPILES      
+layernorm  drop_store_mask    store#2  T4=FAIL_ASSERT   cpu=CHECK_FAILED  
+layernorm  mask_lt_to_le      lt#0     T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  mask_lt_to_le      lt#1     T4=PASS          cpu=COMPILES      
+layernorm  mask_lt_to_le      lt#2     T4=PASS          cpu=COMPILES      
+layernorm  mask_lt_to_le      lt#3     T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  load_other_changed zero#0   T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  load_other_changed zero#1   T4=PASS          cpu=COMPILES      
+layernorm  load_other_changed zero#2   T4=PASS          cpu=COMPILES      
+layernorm  drop_eps           eps#0    T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  divisor_off_by_one div#0    T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  divisor_off_by_one div#1    T4=FAIL_ASSERT   cpu=COMPILES      
+layernorm  acc_dtype_fp16     acc#0    T4=COMPILE_ERROR cpu=COMPILE_ERROR CompilationError: AssertionError("Loop-carried variable _mean has initial type <['1024'], fp16> but is re-assigned to <['1024'], fp32> in loop! Please
+layernorm  acc_dtype_fp16     acc#1    T4=COMPILE_ERROR cpu=COMPILE_ERROR CompilationError: AssertionError("Loop-carried variable _var has initial type <['1024'], fp16> but is re-assigned to <['1024'], fp32> in loop! Please 
+matmul     ORIGINAL           -        T4=PASS          cpu=COMPILES      
+matmul     drop_load_mask     load#0   T4=PASS          cpu=COMPILES      
+matmul     drop_load_mask     load#1   T4=PASS          cpu=COMPILES      
+matmul     drop_store_mask    store#0  T4=FAIL_ASSERT   cpu=CHECK_FAILED  
+matmul     mask_lt_to_le      lt#0     T4=PASS          cpu=COMPILES      
+matmul     mask_lt_to_le      lt#1     T4=PASS          cpu=COMPILES      
+matmul     mask_lt_to_le      lt#2     T4=PASS          cpu=CHECK_FAILED  
+matmul     mask_lt_to_le      lt#3     T4=FAIL_ASSERT   cpu=COMPILES      
+matmul     load_other_changed zero#0   T4=PASS          cpu=COMPILES      
+matmul     load_other_changed zero#1   T4=PASS          cpu=COMPILES      
+matmul     acc_dtype_fp16     acc#0    T4=COMPILE_ERROR cpu=COMPILES       <-- MISMATCH 
+matmul     k_loop_floor_div   kloop#0  T4=FAIL_ASSERT   cpu=COMPILES      
+matmul     drop_modulo_wrap   mod#0    T4=PASS          cpu=COMPILES      
+matmul     drop_modulo_wrap   mod#1    T4=PASS          cpu=COMPILES      
+total=44 compile-error mismatches=1

@@ -62,6 +62,30 @@ async def run_mutants(sb, src, test, muts, parallel=12):
     return out
 
 
+async def compile_survivors(sb, src, test, muts, survivors, log, parallel=8):
+    """Optional step: drop survivors that are not valid GPU programs. The interpreter accepts code the compiler rejects
+    (e.g. an fp16 accumulator that picks up fp32), so such a survivor is not a test gap. Sets m['compile'] = {status, detail}.
+
+    The unmodified kernel is checked first; if it does not compile here either, the check is meaningless and is skipped.
+    """
+    base, detail = await sb.compile_check(split_script(src)[0], full_program(src, test))
+    if base != "COMPILES":
+        log(f"compile check skipped: the original kernel gives {base} ({detail})")
+        return False
+    codes = {(op, site): c for op, site, c in muts}
+    sem = asyncio.Semaphore(parallel)
+
+    async def one(m):
+        async with sem:
+            status, detail = await sb.compile_check(split_script(codes[(m["op"], m["site"])])[0], full_program(codes[(m["op"], m["site"])], test))
+            m["compile"] = {"status": status, "detail": detail}
+
+    await asyncio.gather(*[one(m) for m in survivors])
+    bad = [m for m in survivors if m["compile"]["status"] == "COMPILE_ERROR"]
+    log(f"compile check: {len(bad)} of {len(survivors)} survivors do not compile for CUDA, so they are not test gaps")
+    return True
+
+
 async def close_survivor(sb, src, test, op, site, mut_code, model, tries, raw_dir, run_id, sem):
     """Stage 2: show Nemotron the survivor's diff. Outcome: killed (verified by execution) / claimed_equivalent / failed."""
     mhead = split_script(mut_code)[0]
@@ -106,7 +130,7 @@ async def close_survivor(sb, src, test, op, site, mut_code, model, tries, raw_di
     return rec
 
 
-async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out_dir=None, log=print, image=None):
+async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out_dir=None, log=print, image=None, compile_check=False):
     """Full pipeline for one kernel script. Writes report.json, report.md and generated_test.py into out_dir."""
     kernel_path = Path(kernel_path)
     src = kernel_path.read_text()
@@ -130,13 +154,17 @@ async def analyze(kernel_path, model=llm.DEFAULT_MODEL, tries=4, close=True, out
         report["mutants"] = await run_mutants(sb, src, gen["test"], muts)
         survivors = [m for m in report["mutants"] if m["T3B"] == "SURVIVED"]
         log(f"{len(report['mutants']) - len(survivors)} caught, {len(survivors)} survived")
-        if close and survivors:
-            log(f"stage 2: Nemotron targets the {len(survivors)} survivors (a killer test must pass the original and fail the mutant)")
+        if compile_check and survivors:
+            report["compile_check"] = await compile_survivors(sb, src, gen["test"], muts, survivors, log)
+        # stage 2 only for survivors that are valid programs (all of them when the compile check is off or was skipped)
+        targets = [m for m in survivors if m.get("compile", {}).get("status") != "COMPILE_ERROR"]
+        if close and targets:
+            log(f"stage 2: Nemotron targets the {len(targets)} survivors (a killer test must pass the original and fail the mutant)")
             codes = {(op, site): c for op, site, c in muts}
             sem = asyncio.Semaphore(8)
             res = await asyncio.gather(*[close_survivor(sb, src, gen["test"], m["op"], m["site"], codes[(m["op"], m["site"])], model, 3, raw_dir, run_id, sem)
-                                         for m in survivors])
-            for m, r in zip(survivors, res):
+                                         for m in targets])
+            for m, r in zip(targets, res):
                 m["stage2"] = r
                 report["tokens"]["close"] += r["tokens"]
                 log(f"  {m['op']} @ {m['site']}: {r['outcome']} (tries={r['tries']})")

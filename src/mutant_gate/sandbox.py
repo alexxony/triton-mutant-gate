@@ -6,6 +6,7 @@ from contree_sdk import Contree
 
 CONFIG = Path.home() / ".config" / "mutant-gate" / "image"
 BOUNDCHECK = (Path(__file__).parent / "payload" / "boundcheck.py").read_text()
+COMPILECHECK = (Path(__file__).parent / "payload" / "compilecheck.py").read_text()
 INSTALL = ("pip install --no-cache-dir triton==3.8.0 torch numpy "
            "--extra-index-url https://download.pytorch.org/whl/cpu 2>&1 | tail -3")
 
@@ -50,3 +51,18 @@ class Sandbox:
         r = await self.img.run(shell=shell, files=files, disposable=True, timeout=240)
         err = (r.stderr or "").strip().splitlines()
         return r.exit_code, (err[-1][:200] if err else "")
+
+    async def compile_check(self, head, code):
+        """Compile every kernel launch of a script (head = kernels and helpers, code = the full program) for a CUDA target (no GPU, nothing executes). Returns (status, detail).
+
+        status: COMPILES / COMPILE_ERROR / NO_LAUNCH (the script never launched a kernel) / CHECK_FAILED (the check itself broke).
+        The script runs under the interpreter so all its launches happen; each distinct launch is compiled (sm_75 target).
+        """
+        shell = ("cd /w && TRITON_INTERPRET=1 python -c \"import compilecheck; compilecheck.record('k.py', 'l.json')\" >/dev/null 2>&1; "
+                 "python -c \"import compilecheck; compilecheck.compile_all('h.py', 'l.json')\"")
+        files = {"/w/k.py": code.encode(), "/w/h.py": head.encode(), "/w/compilecheck.py": COMPILECHECK.encode()}
+        r = await self.img.run(shell=shell, files=files, disposable=True, timeout=240)
+        line = next((l for l in reversed((r.stdout or "").splitlines()) if l.startswith("@@COMPILECHECK")), "")
+        detail = line.partition("first=")[2][:150]
+        status = {0: "COMPILES", 3: "COMPILE_ERROR", 4: "NO_LAUNCH", 5: "CHECK_FAILED"}.get(r.exit_code, "CHECK_FAILED")
+        return status, detail if line else ((r.stderr or "").strip().splitlines() or [""])[-1][:150]

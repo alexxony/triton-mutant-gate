@@ -52,7 +52,9 @@ uv run mutant-gate run examples/kernels/layernorm.py              # the full gat
 ```
 
 Output goes to `mutant-gate-out/<kernel>/`: `report.md` (summary table), `report.json`, `generated_test.py` and `raw/`
-(every model reply). Options: `--model`, `--tries`, `--no-close` (skip stage 2), `--image`, `--out`.
+(every model reply). Options: `--model`, `--tries`, `--no-close` (skip stage 2), `--compile-check`, `--image`, `--out`.
+`--compile-check` compiles every launch of each survivor for CUDA (sm_75, no GPU needed, inside the same sandbox) and sets
+aside survivors that are not valid GPU programs, so Nemotron is not asked to write tests for them.
 Tests (offline): `uv run pytest`.
 
 Example output for `examples/kernels/layernorm.py` (one real run): 18 bugs planted, 13 caught by the generated test,
@@ -72,7 +74,8 @@ code pattern is present.
 - The Triton **CPU interpreter is not a compiler**. In a pre-registered check on a Colab T4 (Triton 3.6.0), the three fp16
   accumulator survivors turned out not to compile ("loop-carried variable ... re-assigned to fp32"), so the interpreter let
   invalid mutants through; in the other direction, a compiled run missed most dropped-mask bugs that the interpreter's bounds
-  checks catch. This compiled check is not part of `mutant-gate run` yet. One GPU, one Triton build
+  checks catch. `mutant-gate run --compile-check` now catches the first kind (compile errors) on CPU; it cannot tell whether a
+  compiled run would pass or fail the test, and what compiles depends on the Triton version in the sandbox image (3.8.0)
   ([details](docs/RESULTS.md#compiled-gpu-run-colab-t4)).
 - Mutants come from a fixed set of rewrite rules, not real bug reports. "Equivalent" is the model's opinion plus sampled
   inputs, not a proof.

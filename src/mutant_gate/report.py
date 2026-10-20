@@ -20,7 +20,12 @@ def markdown(report):
     for m in muts:
         s = m.get("stage2")
         follow = OUTCOME_TEXT.get(s["outcome"], s["outcome"]) if s else ""
-        lines.append(f"| {m['op']} @ {m['site']} | {'survived' if m['T3B'] == 'SURVIVED' else 'caught'} | {follow} |")
+        verdict = "survived" if m["T3B"] == "SURVIVED" else "caught"
+        if m.get("compile", {}).get("status") == "COMPILE_ERROR":
+            verdict, follow = "survived, but does not compile", f"not a test gap: {m['compile']['detail']}"
+        lines.append(f"| {m['op']} @ {m['site']} | {verdict} | {follow} |")
+    compiled = ("Survivors were also compiled for CUDA (sandbox Triton build, no GPU); a compiled run's pass/fail is not checked."
+                if report.get("compile_check") else "Compilation for a GPU is not checked (use --compile-check).")
     lines += ["", "Verdicts come from running the kernel in the Triton CPU interpreter with out-of-bounds checks on. "
-              "'Equivalent' answers are the model's opinion, not a proof; behaviour on a compiled GPU run is not checked."]
+              f"'Equivalent' answers are the model's opinion, not a proof. {compiled}"]
     return "\n".join(lines) + "\n"
