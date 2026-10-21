@@ -3,3 +3,4 @@ __pycache__/
 *.egg-info/
 mutant-gate-out/
 .pytest_cache/
+experiments/compiled_external/bundle.json

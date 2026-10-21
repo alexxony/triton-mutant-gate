@@ -1,0 +1,105 @@
+{
+ "kernel": "autotune_axpy.py",
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "run_id": 1792547475,
+ "mutants_planted": 9,
+ "accepted": true,
+ "tokens": {
+  "generate": 3275,
+  "close": 3873
+ },
+ "mutants": [
+  {
+   "op": "drop_load_mask",
+   "site": "axpy_kernel:load#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 24 active lane(s) outside every kernel tenso"
+  },
+  {
+   "op": "drop_load_mask",
+   "site": "axpy_kernel:load#1",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 24 active lane(s) outside every kernel tenso"
+  },
+  {
+   "op": "drop_store_mask",
+   "site": "axpy_kernel:store#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 24 active lane(s) outside every kernel tens"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "axpy_kernel:lt#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+  },
+  {
+   "op": "load_other_changed",
+   "site": "axpy_kernel:zero#0",
+   "T3": "SURVIVED",
+   "T3B": "SURVIVED",
+   "detail": "",
+   "oracle": {
+    "class": "IDENTICAL",
+    "launches": 8
+   },
+   "stage2": {
+    "outcome": "claimed_equivalent",
+    "tries": 1,
+    "syntax_errors": 0,
+    "tokens": 1817,
+    "log": [
+     "model answered EQUIVALENT"
+    ]
+   }
+  },
+  {
+   "op": "load_other_changed",
+   "site": "axpy_kernel:zero#1",
+   "T3": "SURVIVED",
+   "T3B": "SURVIVED",
+   "detail": "",
+   "oracle": {
+    "class": "IDENTICAL",
+    "launches": 8
+   },
+   "stage2": {
+    "outcome": "claimed_equivalent",
+    "tries": 1,
+    "syntax_errors": 0,
+    "tokens": 2056,
+    "log": [
+     "model answered EQUIVALENT"
+    ]
+   }
+  },
+  {
+   "op": "drop_load_mask",
+   "site": "rowsum_kernel:load#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 31 active lane(s) outside every kernel tenso"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "rowsum_kernel:lt#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+  },
+  {
+   "op": "load_other_changed",
+   "site": "rowsum_kernel:zero#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "Greatest relative difference: 317.20458984375 at index (2,) (up to 0.0001 allowed)"
+  }
+ ],
+ "tries": 1,
+ "test": "# Additional tests to stress boundary/tail handling and edge cases\ntorch.manual_seed(123)\n\n# 1. axpy with empty tensor (n=0)\nn = 0\nx = torch.empty(n, device='cpu')\ny = torch.empty(n, device='cpu')\nout = axpy(x, y, 3.14)\nassert out.shape == torch.Size([0]), \"axpy output shape mismatch for n=0\"\n\n# 2. axpy with single element (n=1)\nn = 1\nx = torch.randn(n, device='cpu')\ny = torch.randn(n, device='cpu')\na = -2.5\nout = axpy(x, y, a)\ntorch.testing.assert_close(out, a * x + y, rtol=1e-6, atol=1e-6,\n                           msg=\"axpy failed for n=1\")\n\n# 3. axpy with size equal to a typical block size (n=64)\nn = 64\nx = torch.randn(n, device='cpu')\ny = torch.randn(n, device='cpu')\na = 1.5\nout = axpy(x, y, a)\ntorch.testing.assert_close(out, a * x + y, rtol=1e-6, atol=1e-6,\n                           msg=\"axpy failed for n=64 (block-aligned)\")\n\n# 4. axpy with zero scalar (a=0) \u2013 should return y unchanged\nn = 123\nx = torch.randn(n, device='cpu')\ny = torch.randn(n, device='cpu')\na = 0.0\nout = axpy(x, y, a)\ntorch.testing.assert_close(out, y, rtol=1e-6, atol=1e-6,\n                           msg=\"axpy with a=0 should return y\")\n\n# 5. rowsum with a single column (cols=1)\nrows, cols = 57, 1\nm = torch.randn(rows, cols, device='cpu')\nout = rowsum(m)\ntorch.testing.assert_close(out, m.sum(dim=1), rtol=1e-5, atol=1e-5,\n                           msg=\"rowsum failed for single column\")\n",
+ "compile_check": false
+}

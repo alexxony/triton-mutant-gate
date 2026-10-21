@@ -1,0 +1,167 @@
+{
+ "kernel": "03-matrix-multiplication.py",
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "run_id": 1792548415,
+ "mutants_planted": 13,
+ "accepted": true,
+ "tokens": {
+  "generate": 13853,
+  "close": 71840
+ },
+ "mutants": [
+  {
+   "op": "drop_load_mask",
+   "site": "matmul_kernel:load#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 522 active lane(s) outside every kernel tens"
+  },
+  {
+   "op": "drop_load_mask",
+   "site": "matmul_kernel:load#1",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1728 active lane(s) outside every kernel ten"
+  },
+  {
+   "op": "drop_store_mask",
+   "site": "matmul_kernel:store#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 500 active lane(s) outside every kernel ten"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "matmul_kernel:lt#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 3 active lane(s) outside every kernel tensor"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "matmul_kernel:lt#1",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 32 active lane(s) outside every kernel tenso"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "matmul_kernel:lt#2",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 10 active lane(s) outside every kernel tens"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "matmul_kernel:lt#3",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1 active lane(s) outside every kernel tenso"
+  },
+  {
+   "op": "load_other_changed",
+   "site": "matmul_kernel:zero#0",
+   "T3": "SURVIVED",
+   "T3B": "SURVIVED",
+   "detail": "  return TensorHandle(np.matmul(a_data, b_data, dtype=d.data.dtype) + d.data, d.dtype.scalar)",
+   "oracle": {
+    "class": "IDENTICAL",
+    "launches": 9
+   },
+   "stage2": {
+    "outcome": "claimed_equivalent",
+    "tries": 1,
+    "syntax_errors": 0,
+    "tokens": 11247,
+    "log": [
+     "model answered EQUIVALENT"
+    ]
+   }
+  },
+  {
+   "op": "load_other_changed",
+   "site": "matmul_kernel:zero#1",
+   "T3": "SURVIVED",
+   "T3B": "SURVIVED",
+   "detail": "  return TensorHandle(np.matmul(a_data, b_data, dtype=d.data.dtype) + d.data, d.dtype.scalar)",
+   "oracle": {
+    "class": "IDENTICAL",
+    "launches": 9
+   },
+   "stage2": {
+    "outcome": "failed",
+    "tries": 3,
+    "syntax_errors": 0,
+    "tokens": 28426,
+    "log": [
+     "Your test FAILS on the original kernel (NameError: name 'torch_ref' is not defined). It must pass on the original.",
+     "Your test FAILS on the original kernel (ModuleNotFoundError: No module named 'triton.runtime.driver.active'; 'triton.runtime.driver' is not a package). It must pass on the original.",
+     "Your test PASSES on the mutant too, so it does not tell them apart."
+    ]
+   }
+  },
+  {
+   "op": "acc_dtype_fp16",
+   "site": "matmul_kernel:acc#0",
+   "T3": "SURVIVED",
+   "T3B": "SURVIVED",
+   "detail": "  return TensorHandle(np.matmul(a_data, b_data, dtype=d.data.dtype) + d.data, d.dtype.scalar)",
+   "oracle": {
+    "class": "DIFFERS",
+    "first": {
+     "launch": 0,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 155594,
+     "max_abs": 0.0078125,
+     "max_rel": 23.89969604863222,
+     "bits_only": false
+    },
+    "worst": {
+     "launch": 0,
+     "fn": "matmul_kernel",
+     "arg": "c_ptr",
+     "n_diff": 155594,
+     "max_abs": 0.0078125,
+     "max_rel": 23.89969604863222,
+     "bits_only": false
+    }
+   },
+   "stage2": {
+    "outcome": "failed",
+    "tries": 3,
+    "syntax_errors": 0,
+    "tokens": 32167,
+    "log": [
+     "No usable test code (need one ```python block with assert, or the word EQUIVALENT).",
+     "Your test FAILS on the original kernel (AssertionError: Accumulator precision test failed: got 1.52587890625e-05, expected ~1.0). It must pass on the original.",
+     "Your test PASSES on the mutant too, so it does not tell them apart."
+    ]
+   }
+  },
+  {
+   "op": "k_loop_floor_div",
+   "site": "matmul_kernel:kloop#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "AssertionError: ones_no_act: Output mismatch"
+  },
+  {
+   "op": "drop_modulo_wrap",
+   "site": "matmul_kernel:mod#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 220 active lane(s) outside every kernel tens"
+  },
+  {
+   "op": "drop_modulo_wrap",
+   "site": "matmul_kernel:mod#1",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 36 active lane(s) outside every kernel tenso"
+  }
+ ],
+ "tries": 1,
+ "test": "# Additional tests to expose boundary, numerical, and edge-case bugs\ndef torch_ref(a, b, activation=\"\"):\n    a_float = a.to(torch.float32)\n    b_float = b.to(torch.float32)\n    res = torch.matmul(a_float, b_float)\n    if activation == \"leaky_relu\":\n        res = torch.where(res >= 0, res, 0.01 * res)\n    return res.to(torch.float16)\n\ntest_cases = [\n    # (description, a_fill, b_fill, activation, expect_nan)\n    (\"zeros_no_act\", 0.0, 0.0, \"\", False),\n    (\"zeros_act\", 0.0, 0.0, \"leaky_relu\", False),\n    (\"ones_no_act\", 1.0, 1.0, \"\", False),\n    (\"ones_act\", 1.0, 1.0, \"leaky_relu\", False),\n    (\"neg_one_no_act\", -1.0, 1.0, \"\", False),\n    (\"neg_one_act\", -1.0, 1.0, \"leaky_relu\", False),\n    (\"inf_zero_no_act\", float('inf'), 0.0, \"\", True),\n    (\"nan_one_no_act\", float('nan'), 1.0, \"\", True),\n]\n\nfor desc, aval, bval, act, is_nan in test_cases:\n    a = torch.full((10, 10), aval, dtype=torch.float16, device=DEVICE)\n    b = torch.full((10, 10), bval, dtype=torch.float16, device=DEVICE)\n    triton_out = matmul(a, b, act)\n    torch_out = torch_ref(a, b, act)\n    if is_nan:\n        assert torch.all(torch.isnan(triton_out)), f\"{desc}: Triton output not all NaN\"\n        assert torch.all(torch.isnan(torch_out)), f\"{desc}: Reference output not all NaN\"\n    else:\n        assert torch.allclose(triton_out, torch_out, atol=1e-2, rtol=0), f\"{desc}: Output mismatch\"\n",
+ "compile_check": false
+}
