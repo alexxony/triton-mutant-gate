@@ -1,0 +1,64 @@
+{
+ "kernel": "04-low-memory-dropout.py",
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "run_id": 1792548628,
+ "mutants_planted": 7,
+ "accepted": true,
+ "tokens": {
+  "generate": 20139,
+  "close": 0
+ },
+ "mutants": [
+  {
+   "op": "drop_load_mask",
+   "site": "_dropout:load#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+  },
+  {
+   "op": "drop_load_mask",
+   "site": "_dropout:load#1",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+  },
+  {
+   "op": "drop_store_mask",
+   "site": "_dropout:store#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1014 active lane(s) outside every kernel te"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "_dropout:lt#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+  },
+  {
+   "op": "drop_load_mask",
+   "site": "_seeded_dropout:load#0",
+   "T3": "SURVIVED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1014 active lane(s) outside every kernel ten"
+  },
+  {
+   "op": "drop_store_mask",
+   "site": "_seeded_dropout:store#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds store: 1014 active lane(s) outside every kernel te"
+  },
+  {
+   "op": "mask_lt_to_le",
+   "site": "_seeded_dropout:lt#0",
+   "T3": "KILLED",
+   "T3B": "KILLED",
+   "detail": "triton.runtime.errors.InterpreterError: AssertionError('out-of-bounds load: 1 active lane(s) outside every kernel tensor"
+  }
+ ],
+ "tries": 3,
+ "test": "# Additional tests for boundary/tail handling, seeding, and numerical correctness\n# Total kernel launches: 8\n\nimport torch\n\n# Test 1: p=0, size=1 -> identity\nx = torch.randn(1, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 0.0, seed=123)\nassert torch.allclose(out, x, atol=1e-6), \"p=0 failed for size=1\"\n\n# Test 2: p=1, size=1 -> zero\nx = torch.randn(1, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 1.0, seed=123)\nassert torch.allclose(out, torch.zeros_like(x), atol=1e-6), \"p=1 failed for size=1\"\n\n# Test 3: p=0.5, size=1023, seed=123 -> scaling and zero mask\nx = torch.randn(1023, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 0.5, seed=123)\nnz = out != 0\nif nz.any():\n    expected = x[nz] / (1.0 - 0.5)\n    assert torch.allclose(out[nz], expected, atol=1e-5, rtol=0), \"scaling failed for size=1023 seed=123\"\nzm = out == 0\nassert torch.allclose(out[zm], torch.zeros_like(out[zm]), atol=1e-6), \"zero mask failed for size=1023 seed=123\"\n\n# Test 4: p=0.5, size=1023, seed=456 -> scaling and different from seed 123\nx = torch.randn(1023, device=DEVICE, dtype=torch.float32)\nout2 = seeded_dropout(x, 0.5, seed=456)\nnz2 = out2 != 0\nif nz2.any():\n    expected2 = x[nz2] / (1.0 - 0.5)\n    assert torch.allclose(out2[nz2], expected2, atol=1e-5, rtol=0), \"scaling failed for size=1023 seed=456\"\nassert not torch.allclose(out, out2, atol=1e-6), \"different seeds produced identical output for size=1023\"\n\n# Test 5: p=0.5, size=1024 (exact block) -> scaling\nx = torch.randn(1024, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 0.5, seed=123)\nnz = out != 0\nif nz.any():\n    expected = x[nz] / (1.0 - 0.5)\n    assert torch.allclose(out[nz], expected, atol=1e-5, rtol=0), \"scaling failed for size=1024\"\nzm = out == 0\nassert torch.allclose(out[zm], torch.zeros_like(out[zm]), atol=1e-6), \"zero mask failed for size=1024\"\n\n# Test 6: p=0.5, size=1025 (one over block) -> scaling\nx = torch.randn(1025, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 0.5, seed=123)\nnz = out != 0\nif nz.any():\n    expected = x[nz] / (1.0 - 0.5)\n    assert torch.allclose(out[nz], expected, atol=1e-5, rtol=0), \"scaling failed for size=1025\"\nzm = out == 0\nassert torch.allclose(out[zm], torch.zeros_like(out[zm]), atol=1e-6), \"zero mask failed for size=1025\"\n\n# Test 7: p=0, size=2049 (multiple blocks + tail) -> identity\nx = torch.randn(2049, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 0.0, seed=123)\nassert torch.allclose(out, x, atol=1e-6), \"p=0 failed for size=2049\"\n\n# Test 8: p=1, size=2049 -> zero\nx = torch.randn(2049, device=DEVICE, dtype=torch.float32)\nout = seeded_dropout(x, 1.0, seed=123)\nassert torch.allclose(out, torch.zeros_like(x), atol=1e-6), \"p=1 failed for size=2049\"\n"
+}

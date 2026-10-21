@@ -1,0 +1,8 @@
+04-low-memory-dropout.py: 7 mutants planted
+stage 1: Nemotron writes extra tests (it never sees the mutants)
+  try 1: no usable test code (finish_reason=stop)
+  try 2: no usable test code (finish_reason=stop)
+  try 3: test accepted (passes the original kernel)
+running the test against 7 mutants in the sandbox
+7 caught, 0 survived
+report: <scratch>/out_04-low-memory-dropout/report.md

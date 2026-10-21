@@ -1,0 +1,13 @@
+03-matrix-multiplication.py: 1 'cuda' device reference(s) pointed at the CPU for the sandbox
+03-matrix-multiplication.py: 13 mutants planted
+stage 1: Nemotron writes extra tests (it never sees the mutants)
+  try 1: test accepted (passes the original kernel)
+running the test against 13 mutants in the sandbox
+10 caught, 3 survived
+compile check skipped: the original kernel gives CHECK_FAILED (RuntimeError: 0 active drivers ([]). There should only be one.)
+output oracle: 1 DIFFERS, 2 IDENTICAL
+stage 2: Nemotron targets the 3 survivors (a killer test must pass the original and fail the mutant)
+  load_other_changed @ matmul_kernel:zero#0: claimed_equivalent (tries=1)
+  load_other_changed @ matmul_kernel:zero#1: failed (tries=3)
+  acc_dtype_fp16 @ matmul_kernel:acc#0: failed (tries=3)
+report: <scratch>/out_03-matrix-multiplication/report.md

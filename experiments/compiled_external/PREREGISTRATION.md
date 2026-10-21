@@ -84,3 +84,23 @@ The Colab session is development tooling, not part of `mutant-gate run`.
 
 ---
 Results are appended below this line.
+
+## Run 0 (2026-10-21 KST, Amendment A.4 step 1: the two ORIGINAL programs only, both modes)
+
+Colab T4 session, `nvidia-smi`: Tesla T4, compute capability 7.5. Versions: Python 3.13.15, torch 2.11.0+cu130, **triton 3.6.0** (the sandbox used 3.8.0), CUDA 13.0.
+
+| program | `colab_compiled` | `colab_interp` |
+|---|---|---|
+| `autotune_axpy` original | PASS | PASS |
+| tutorial 03 original | **TIMEOUT (400 s)** | PASS |
+
+By the rule above, tutorial 03 is excluded from the full batch until its original passes compiled; none of its mutants are read. The full batch was **not run**.
+
+Why 03 times out is **not known**. A diagnostic (stack dump at 200 s from inside the program) was started in the same session; the Colab connection dropped
+(`RuntimeError: Connection was lost.`) and its output never reached the client, so nothing was learned. The two suspects named before the run are untested: the
+fp8 block (`TORCH_HAS_FP8 and is_cuda()` with no compute-capability check, so it runs on sm_75) and compiling up to 11 autotune configs. After the drop the VM was
+idle (GPU 0 %, no program running). The session was stopped; no further T4 time was used.
+
+Open if resumed: diagnose 03 with the program started under `nohup` on the VM and its output written to a file read by a separate short call, then either amend
+(hide `torch.float8_e5m2` in both Colab modes) before the full batch, or run `autotune_axpy` alone (9 mutants, 2 survivors in the sandbox). Nothing in the
+predictions table has been tested.
