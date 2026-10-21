@@ -77,6 +77,8 @@ def compile_all(head_path, launches_json):
     seen, errors, internal = set(), [], []
     for launch in launches:
         jf = ns.get(launch["fn"])
+        while not isinstance(jf, J.JITFunction) and hasattr(jf, "fn"):
+            jf = jf.fn   # @triton.autotune / @triton.heuristics wrap the JITFunction; the launch records the inner kernel's name
         if not isinstance(jf, J.JITFunction):
             internal.append(f"kernel {launch['fn']} is not defined before the tier marker")
             continue

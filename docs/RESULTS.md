@@ -114,6 +114,22 @@ Two things went wrong on the way and are kept in the pre-registration: run 1 lef
 itself with `hash(str)`, which changes per process; the sandbox now sets `PYTHONHASHSEED=0`), and the sandbox API returned HTTP 500 once
 before any measurement (retried). `DIFFERS` is reported on its own line and is not counted as a kill.
 
+## A file with `@triton.autotune`, two kernels and several launches
+
+`examples/plain/autotune_axpy.py` (written for this repo, not taken from a project; 9 mutants over two kernels, the first kernel
+autotuned over three block sizes). Trying it found three things that a one-kernel tutorial file never hit, all now fixed:
+
+- The unmodified file failed in the sandbox before anything was judged: `Autotuner.do_bench` asks for a GPU driver
+  (`0 active drivers`). The sandbox now loads a small shim (`payload/interp_shims.py`) that replaces the benchmarker, so the autotuner
+  keeps its first config. Consequence to know: **only the first config is exercised**, the other block sizes are never run.
+- `--compile-check` skipped the file (`CHECK_FAILED`) because it only accepted a bare `JITFunction`; it now unwraps the autotuner.
+- The sandbox API answered HTTP 500 three times while this was being tried (image lookup, file lookup); sandbox calls now retry transient 5xx.
+
+Result of one full run (`--diff-oracle --compile-check`, 3,275 + 3,873 tokens): 7 of 9 mutants caught, 2 survived (`other=` on the
+masked lanes of `axpy_kernel`); the survivors compile for CUDA; the oracle reports their outputs identical on all 8 launches
+and Nemotron answers equivalent for both. One run on one file, so this shows that such a file now goes through the pipeline, not how
+well the tests it gets are.
+
 ## Known limits
 
 - The interpreter is not a compiler. Triton's own documentation lists interpreter limitations, and upstream issues
@@ -123,5 +139,6 @@ before any measurement (retried). `DIFFERS` is reported on its own line and is n
 - Mutation operators are a fixed set of rewrite rules, not real bug reports.
 - "Equivalent" is the model's judgement; `--diff-oracle` adds a check that the outputs are bit-identical on the launches the test makes.
   That is evidence on those inputs only, and a different input shape can still tell the two apart.
-- Four kernels, one tutorial-style kernel each; no claim about kernels in general.
+- Four tutorial-style kernels plus two small plain files (`leaky_relu`, `autotune_axpy`); no claim about kernels in general. With
+  `@triton.autotune` only the first config runs in the sandbox.
 - Cost of the full study: Super 5 repeats used 343,276 tokens (about $0.17 at list price).
