@@ -64,5 +64,23 @@ caught in the sandbox, at least half of the dropped-mask ones (`drop_load_mask`,
 2 files, 5 survivors, 1 GPU model, 1 Triton build, one generated test per file. The result is an illustration for those files, not a rate.
 The Colab session is development tooling, not part of `mutant-gate run`.
 
+## Amendment A (2026-10-21, after an independent review of this document, before any T4 run; the predictions above stay as written)
+
+1. **Device.** `torch.set_default_device("cuda")` is set in both Colab modes (it was only in the compiled one), so tensors a test creates without a device
+   come from the same RNG stream in both. The recorded `autotune_axpy` test hard-codes `device='cpu'` in 9 places (it was written against the CPU-pointed
+   script); for the Colab programs only, `device='cpu'` in that test is replaced by `device='cuda'`. The bundle records this substitution.
+   Tutorial 03's test uses the file's own `DEVICE` and needs none.
+2. **What the columns can be compared on.** `colab_interp` and `colab_compiled` share the machine, the inputs and the shim-free driver, so every
+   reading below compares those two. `sandbox_interp` ran on CPU RNG with a faked device and a different Triton build; it is context, not a control.
+   The row "`colab_interp` differs from `sandbox_interp` -> Triton version effect" in the table above is withdrawn: inputs, device path, shims and the
+   version cannot be told apart here.
+3. **Autotune.** Compiled mode autotunes for real and may pick another block size than the interpreter column (which keeps the first config). The
+   runner prints `best_config` for every autotuned kernel after each compiled program, so a verdict that differs between the two columns can be checked
+   against the configuration actually used.
+4. **Order of the run.** First only the two ORIGINAL programs in both modes (4 results). The full batch runs only if all four are `PASS`. Tutorial 03's
+   fp8 block (`TORCH_HAS_FP8 and is_cuda()`, no compute-capability check) runs on a T4 and may make the original fail compiled; if so, a second
+   amendment (hide `torch.float8_e5m2` in both Colab modes) is written and committed before the full batch.
+5. `interp_shims.py` is uploaded next to the runner (the interpreter mode imports it).
+
 ---
 Results are appended below this line.

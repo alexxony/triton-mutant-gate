@@ -14,8 +14,12 @@ STATUS = "/content/status.json"
 WORK = "/content/work"
 TIMEOUT = 400
 SKIP_BENCH = "from triton import testing; testing.Mark.run = lambda self, *a, **k: None"
-COMPILED = "import torch, runpy; torch.set_default_device('cuda'); " + SKIP_BENCH + "; runpy.run_path('{p}', run_name='__main__')"
-INTERP = "import sys; sys.path.insert(0, '/content'); import interp_shims, runpy; runpy.run_path('{p}', run_name='__main__')"
+# Amendment A.1: cuda is the default device in both modes. A.3: print the autotuner's chosen config after the program ran.
+BEST = "[print('@@BEST', k, v.best_config) for k, v in g.items() if hasattr(v, 'best_config')]"
+COMPILED = "import torch, runpy; torch.set_default_device('cuda'); " + SKIP_BENCH + "; g = runpy.run_path('{p}', run_name='__main__'); " + BEST
+INTERP = ("import sys; sys.path.insert(0, '/content'); import torch, interp_shims, runpy; torch.set_default_device('cuda'); "
+          "g = runpy.run_path('{p}', run_name='__main__'); " + BEST)
+ONLY_ORIGINALS = os.path.exists("/content/only_originals")   # Amendment A.4: first exec runs the two originals only
 
 
 def versions():
@@ -54,12 +58,15 @@ def run(path, mode):
         env.pop("TRITON_INTERPRET", None)
         cmd = [sys.executable, "-c", COMPILED.format(p=path)]
     t = time.time()
+    stdout = ""
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env, cwd="/content")
+        stdout = r.stdout
         cat, last = classify(r.returncode, r.stdout, r.stderr, False)
     except subprocess.TimeoutExpired:
         cat, last = classify(0, "", "", True)
-    return {"result": cat, "detail": last, "seconds": round(time.time() - t, 1)}
+    best = [l[7:].strip()[:160] for l in stdout.splitlines() if l.startswith("@@BEST")]
+    return {"result": cat, "detail": last, "seconds": round(time.time() - t, 1), "best_config": best}
 
 
 def main():
@@ -68,7 +75,7 @@ def main():
     res = {"versions": versions(), "kernels": {}}
     print("versions", res["versions"], flush=True)
     for k, v in bundle["kernels"].items():
-        entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + v["mutants"]
+        entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + ([] if ONLY_ORIGINALS else v["mutants"])
         out = []
         for i, e in enumerate(entries):
             p = f"{WORK}/{k}_{i}.py"

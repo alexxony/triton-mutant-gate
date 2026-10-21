@@ -21,6 +21,7 @@ TUTORIAL03_SHA256_PREFIX = "f88a9506694c"   # tutorial 03 at triton-lang/triton 
 
 def one(name, src, rec_dir):
     test = (rec_dir / "generated_test.py").read_text()
+    test = test.replace("device='cpu'", "device='cuda'")   # Amendment A.1: the recorded test was written against the CPU-pointed script
     report = json.loads((rec_dir / "report.json").read_text())
     rec = {(m["op"], m["site"]): m["T3B"] for m in report["mutants"]}
     muts = make_mutants(src)
