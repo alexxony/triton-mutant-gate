@@ -151,6 +151,11 @@ max rel 23.9) while the test passes anyway. So the fp16 accumulator is a gap the
 survivors look equivalent (no contradiction on these launches), including the one the model failed to call equivalent.
 Tutorial 04: the first two attempts at a test returned no usable code, the third was accepted (20,139 tokens).
 
+On GPUs: `contree-sdk` 0.3.6 has no GPU option (searched the package for gpu/cuda/nvidia/accelerator: no hits), and the Nebius documentation
+reachable from here does not describe Sandboxes at all, so whether a sandbox can have a GPU is **unknown**, not "no". The documented GPU routes in
+Nebius AI Cloud are Compute VMs and Serverless AI jobs (`nebius ai job run --platform gpu-l40s-a|gpu-h100-sxm --image <CUDA image>`); neither is used
+here, and a job per script is a different shape from the hundreds of short runs per kernel this tool makes.
+
 Limits found: (1) `--compile-check` cannot check files whose "head" (everything before the last definition) executes kernels at
 module level, as 03 does: the check runs the head once without the interpreter, and a real launch needs a GPU. A shim that answers the
 device query only moves the failure to the first launch (`get_current_stream`). (2) Files that need a compiled kernel object (02) are out.
