@@ -37,16 +37,17 @@ def save(fig, name, width=1600, height=900):
 # 1. share of planted bugs the tests catch, before and after Nemotron's verified tests
 before, after = caught / planted, (caught + killed) / planted
 fig = go.Figure(go.Bar(
-    x=["Tests you had", "+ tests Nemotron wrote\n(each verified by execution)"], y=[before * 100, after * 100],
+    x=["Your check + Nemotron's first tests", "+ Nemotron's targeted tests\n(each verified by execution)"], y=[before * 100, after * 100],
     marker_color=[GREY, GREEN], text=[f"{caught} of {planted}<br>{before:.1%}", f"{caught + killed} of {planted}<br>{after:.1%}"],
     textposition="outside", textfont=dict(size=34), width=0.5))
 fig.update_yaxes(range=[0, 100], title="planted bugs caught (%)", ticksuffix="%", gridcolor="#e5e7eb", title_font_size=24, tickfont_size=20)
 fig.update_xaxes(tickfont_size=26)
-fig.update_layout(title=dict(text="Planted bugs your tests catch, before and after", font_size=40, x=0.04),
+fig.update_layout(title=dict(text="Planted bugs caught, before and after the targeted tests", font_size=40, x=0.04),
                   margin=dict(l=110, r=60, t=120, b=190))
 fig.add_annotation(
     x=0, y=-0.27, xref="paper", yref="paper", xanchor="left", showarrow=False, align="left", font=dict(size=19, color="#4b5563"),
     text=(f"Recorded runs, one per kernel (vecadd, softmax, layernorm, matmul), {planted} planted bugs, Triton CPU interpreter in a Nebius sandbox.<br>"
+          "Left: the kernel's own check plus the first test Nemotron wrote (stage 1). The kernel's own check alone was not measured separately.<br>"
           f"Of the {killed} new verified tests, one targets an fp16-accumulator mutant that does not compile on Triton 3.6.0 (T4) but does on 3.8.0.<br>"
           "Not a proof that the remaining survivors are harmless."))
 save(fig, "before_after")
@@ -58,7 +59,7 @@ fig = go.Figure(go.Bar(y=labels[::-1], x=vals[::-1], orientation="h", marker_col
                        textposition="outside", textfont=dict(size=34), width=0.55))
 fig.update_xaxes(range=[0, max(vals) + 1.2], dtick=1, title="surviving bugs", gridcolor="#e5e7eb", title_font_size=24, tickfont_size=20)
 fig.update_yaxes(tickfont_size=24)
-fig.update_layout(title=dict(text=f"What happened to the {len(survivors)} bugs the first tests missed", font_size=40, x=0.04),
+fig.update_layout(title=dict(text=f"What happened to the {len(survivors)} bugs the first round missed", font_size=40, x=0.04),
                   margin=dict(l=420, r=80, t=120, b=150))
 fig.add_annotation(x=0, y=-0.2, xref="paper", yref="paper", xanchor="left", showarrow=False, font=dict(size=19, color="#4b5563"),
                    text="Same recorded runs. 'Equivalent' answers are the model's judgement plus sampled inputs, not a proof.")
