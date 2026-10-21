@@ -130,6 +130,33 @@ masked lanes of `axpy_kernel`); the survivors compile for CUDA; the oracle repor
 and Nemotron answers equivalent for both. One run on one file, so this shows that such a file now goes through the pipeline, not how
 well the tests it gets are.
 
+## Unmodified files from the Triton repository
+
+Three tutorials taken as they are from `triton-lang/triton` at commit `16491796` (MIT; not copied into this repo), run through
+`mutant-gate run --diff-oracle --compile-check`. This is the first test on code that was not written or adapted for this tool.
+
+| file | before the shims | after | result |
+|---|---|---|---|
+| `02-fused-softmax.py` | original fails in the sandbox (`0 active drivers`) | still fails (`'NoneType' has no attribute '_init_handles'`) | **not supported**: it builds a GPU-compiled object with `softmax_kernel.warmup(...)` and reads registers from it; no CPU interpreter can do that |
+| `03-matrix-multiplication.py` | fails (`0 active drivers`, module-level device query) | runs (9 s) | 13 mutants, 10 caught, 3 survived; `--compile-check` skipped |
+| `04-low-memory-dropout.py` | fails (`No module named 'tabulate'`) | runs (5 s) | 7 mutants, 7 caught, 0 survived |
+
+What it took: the shim (`payload/interp_shims.py`) now also skips `triton.testing.perf_report` benchmarks, answers the module-level
+`triton.runtime.driver.active` queries with CPU values when there is no real driver, and stubs `tabulate` (plain-text table) when missing.
+
+Tutorial 03 in detail (Nemotron Super, one run; tokens: generate 13,853, close 71,840): the 3 survivors are `other=` on two masked loads and
+the fp16 accumulator. Nemotron called `zero#0` equivalent and found no accepted test for `zero#1` and for the fp16 accumulator in three tries
+each. The output oracle: identical on all 9 launches for both `zero` mutants, and different for the fp16 accumulator (`c_ptr`, max abs 0.0078,
+max rel 23.9) while the test passes anyway. So the fp16 accumulator is a gap the oracle can see and the model did not close; the two `zero`
+survivors look equivalent (no contradiction on these launches), including the one the model failed to call equivalent.
+Tutorial 04: the first two attempts at a test returned no usable code, the third was accepted (20,139 tokens).
+
+Limits found: (1) `--compile-check` cannot check files whose "head" (everything before the last definition) executes kernels at
+module level, as 03 does: the check runs the head once without the interpreter, and a real launch needs a GPU. A shim that answers the
+device query only moves the failure to the first launch (`get_current_stream`). (2) Files that need a compiled kernel object (02) are out.
+(3) The shims make the sandbox lie about the device, so a file that branches on the device type takes the CUDA branch with CPU tensors; a
+mutant caught or missed there says nothing about a real GPU.
+
 ## Known limits
 
 - The interpreter is not a compiler. Triton's own documentation lists interpreter limitations, and upstream issues
