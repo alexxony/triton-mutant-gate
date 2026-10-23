@@ -119,3 +119,34 @@ predictions table has been tested.
 
 ---
 Results are appended below this line (run 0 above remains the record for tutorial 03).
+
+## Run 1 (2026-10-23 KST 13:46-13:54, `autotune_axpy` only, per Amendment B; raw: `recorded/run1_autotune_axpy.json`)
+
+Colab T4 (Tesla T4, sm_75), Python 3.13.15, torch 2.11.0+cu130, **triton 3.6.0** (sandbox: 3.8.0). One session, no connection drop, 10 programs x 2 modes.
+The original passed in both columns, so the file was read.
+
+| mutant | sandbox_interp | colab_compiled | colab_interp |
+|---|---|---|---|
+| `drop_load_mask` axpy:load#0 | KILLED | PASS | PASS |
+| `drop_load_mask` axpy:load#1 | KILLED | PASS | PASS |
+| `drop_store_mask` axpy:store#0 | KILLED | PASS | OTHER (`double free or corruption (!prev)`) |
+| `mask_lt_to_le` axpy:lt#0 | KILLED | PASS | PASS |
+| `load_other_changed` axpy:zero#0 | **SURVIVED** | PASS | PASS |
+| `load_other_changed` axpy:zero#1 | **SURVIVED** | PASS | PASS |
+| `drop_load_mask` rowsum:load#0 | KILLED | FAIL_ASSERT | FAIL_ASSERT |
+| `mask_lt_to_le` rowsum:lt#0 | KILLED | FAIL_ASSERT | FAIL_ASSERT |
+| `load_other_changed` rowsum:zero#0 | KILLED | FAIL_ASSERT | FAIL_ASSERT |
+
+Against the predictions that stand (Amendment B.3):
+- The 2 `autotune_axpy` survivors are `PASS` compiled and in the Colab interpreter: **as predicted** (90% each). Reading from the table above: consistent with equivalence on this
+  hardware as well, outputs identical in the sandbox; not a proof.
+- Dropped-mask family on this file (`drop_load_mask`, `drop_store_mask`, `mask_lt_to_le`, 6 mutants, all caught in the sandbox): 4 of 6 are `PASS` compiled (the 4 on `axpy_kernel`), 2 detected
+  (`rowsum_kernel`, numeric). **As predicted** (at least half). The sandbox caught the 4 `axpy_kernel` ones through its interpreter bounds checks; the Colab interpreter has none,
+  and the compiled GPU run does not fault either. In the Colab interpreter 3 of the 4 are also `PASS`; the 4th (`drop_store_mask`) died with a heap-corruption message, which
+  by the rule above counts as "detected" in that column only.
+- Autotune: every compiled `axpy_kernel` run chose BLOCK_SIZE 128 or 256 (4 warps, 3 stages); the interpreter keeps the first config. The compiled verdicts do not depend on which one was chosen
+  here (the same verdict appears for both sizes).
+- Not tested, still untested: the 3 tutorial-03 rows of the predictions table.
+
+Limit: 1 file, 2 survivors, 1 GPU model, 1 Triton build, one generated test. The `rowsum_kernel` mutants were detected in every column; the Colab-vs-sandbox difference
+is confined to `axpy_kernel`'s mask mutants. Why those pass compiled was not investigated.
