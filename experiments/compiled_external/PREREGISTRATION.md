@@ -164,3 +164,14 @@ result to the predictions table.
   hypotheses can hold at once; one run cannot rank them.
 - Stop: 900 s of program time or one Colab disconnect, then the session is stopped. Free T4, no approval needed.
 - If the cause is found, any rerun of tutorial 03's mutants needs its own amendment before it starts.
+
+## Run 2 (diagnosis, 2026-10-23 KST 16:33-16:45; Colab T4, triton 3.6.0, torch 2.11.0+cu130; raw: `recorded/run2_tutorial03_diagnosis.txt`)
+
+- Result: the original **exited 0 after 699.9 s** (cap 900 s). **H3 holds:** run 0's TIMEOUT at 400 s was a cap that was too short, not a hang.
+- Stack tail (the last 3500 of 7451 bytes of the dump file were retrieved; earlier dumps were not kept): the program is inside `autotuner.py _bench -> do_bench ->
+  kernel_call -> jit compile` (`make_llir`, `make_ptx`) at script line 383 (`matmul(a, b)` with `float8_e5m2` inputs, the fp8 block) in the earliest retained
+  dump, and at line 469 (`matmul(a, b, act)` in the test-case loop) in the two later ones. So the time goes to compiling autotune configs (**H2**), including in the
+  fp8 block (**H1**, partly) and again in the later loop. The order of the dumps is inferred from their order in the file. One run on one T4; the host speed was not controlled.
+- Consequence, extrapolated and not measured: if each of the 13 mutants took as long as the original (about 700 s), compiled runs of tutorial 03's mutants would need
+  about 2.5 hours here. They were not run. A rerun needs its own amendment before it starts (for example fewer autotune configs, which changes the program).
+- The predictions table is unchanged; the 3 tutorial-03 rows are still untested.
