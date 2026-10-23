@@ -150,3 +150,17 @@ Against the predictions that stand (Amendment B.3):
 
 Limit: 1 file, 2 survivors, 1 GPU model, 1 Triton build, one generated test. The `rowsum_kernel` mutants were detected in every column; the Colab-vs-sandbox difference
 is confined to `axpy_kernel`'s mask mutants. Why those pass compiled was not investigated.
+
+## Amendment C (2026-10-23 KST, diagnosis only, before the run; Amendment B and the predictions stay as written)
+
+Purpose: find out where tutorial 03's original spends its time when compiled on the T4 (run 0: TIMEOUT at 400 s, cause unknown). This is not a mutant run and adds no
+result to the predictions table.
+
+- One run, no variants: tutorial 03 **original** (from `bundle.json`, same harness as run 0: `torch.set_default_device('cuda')`, `perf_report` benchmark skipped),
+  timeout **900 s**. `faulthandler.dump_traceback_later(120, repeat=True)` writes the Python stack every 120 s to a file, so the stuck frame is visible.
+- Hypotheses, fixed now: **H1** the time is spent in the module-level fp8 `matmul` call (an fp8 block with no compute-capability check, running on sm_75);
+  **H2** it is spent compiling the autotuned fp16 `matmul` (11 configs); **H3** it simply finishes between 400 s and 900 s (slow compile, no hang).
+- How it is read: the stack frames (script line numbers, mapped to the program text in `bundle.json`) say which call; a normal exit before 900 s says H3. Several
+  hypotheses can hold at once; one run cannot rank them.
+- Stop: 900 s of program time or one Colab disconnect, then the session is stopped. Free T4, no approval needed.
+- If the cause is found, any rerun of tutorial 03's mutants needs its own amendment before it starts.
