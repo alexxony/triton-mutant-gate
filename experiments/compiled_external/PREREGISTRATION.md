@@ -104,3 +104,18 @@ idle (GPU 0 %, no program running). The session was stopped; no further T4 time 
 Open if resumed: diagnose 03 with the program started under `nohup` on the VM and its output written to a file read by a separate short call, then either amend
 (hide `torch.float8_e5m2` in both Colab modes) before the full batch, or run `autotune_axpy` alone (9 mutants, 2 survivors in the sandbox). Nothing in the
 predictions table has been tested.
+
+## Amendment B (2026-10-23 KST, after run 0, before any further T4 run; predictions and Amendment A stay as written)
+
+1. **Tutorial 03 is dropped from the compiled batch.** Its original timed out compiled (400 s) in run 0 and the cause is unknown. Under the control rule above
+   ("A file whose original does not pass in a column is excluded ... no reading of its mutants") it cannot contribute. No attempt is made here to diagnose it
+   (fp8 block and 11 autotune configs remain untested suspects) and no second harness amendment is written: the time cap for this experiment is 1.5 hours.
+2. **What runs:** `autotune_axpy` only (original + 9 mutants, 2 survivors in the sandbox interpreter), both modes, same harness, same 400 s timeout.
+   `run_remote.py` gets a filter: if `/content/only_kernels` exists, only the kernels named in it are run (one name per line). No other change to the runner.
+3. **Predictions still standing:** the 2 `autotune_axpy` rows of the table (PASS, 90% each) and the dropped-mask claim, restricted to `autotune_axpy`'s caught mutants.
+   The 3 tutorial-03 rows are **untested and stay untested**; they are not evaluated by this run.
+4. **Hard stop:** two Colab connection drops, or 1.5 hours of wall clock from session start. A partial run is reported as partial.
+5. **Limits:** now 1 file, 2 survivors, 1 GPU model, 1 Triton build (3.6.0 on Colab), one generated test. An illustration, not a rate.
+
+---
+Results are appended below this line (run 0 above remains the record for tutorial 03).

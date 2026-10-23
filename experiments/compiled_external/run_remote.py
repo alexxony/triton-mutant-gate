@@ -19,7 +19,8 @@ BEST = "[print('@@BEST', k, v.best_config) for k, v in g.items() if hasattr(v, '
 COMPILED = "import torch, runpy; torch.set_default_device('cuda'); " + SKIP_BENCH + "; g = runpy.run_path('{p}', run_name='__main__'); " + BEST
 INTERP = ("import sys; sys.path.insert(0, '/content'); import torch, interp_shims, runpy; torch.set_default_device('cuda'); "
           "g = runpy.run_path('{p}', run_name='__main__'); " + BEST)
-ONLY_ORIGINALS = os.path.exists("/content/only_originals")   # Amendment A.4: first exec runs the two originals only
+ONLY_ORIGINALS = os.path.exists("/content/only_originals")   # Amendment A.4: first exec runs the originals only
+ONLY_KERNELS = open("/content/only_kernels").read().split() if os.path.exists("/content/only_kernels") else None   # Amendment B.2
 
 
 def versions():
@@ -75,6 +76,8 @@ def main():
     res = {"versions": versions(), "kernels": {}}
     print("versions", res["versions"], flush=True)
     for k, v in bundle["kernels"].items():
+        if ONLY_KERNELS is not None and k not in ONLY_KERNELS:
+            continue
         entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + ([] if ONLY_ORIGINALS else v["mutants"])
         out = []
         for i, e in enumerate(entries):
