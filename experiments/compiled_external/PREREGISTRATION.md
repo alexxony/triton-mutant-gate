@@ -194,3 +194,29 @@ Purpose: run tutorial 03's 13 mutants compiled on a T4, the run that Run 2 estim
 - **Run 3a:** started 14:30:47 KST on Colab session `mg-t03` (T4, triton 3.6.0, torch 2.11.0+cu130, runner pid 1633). The first pull of `/content/status.json` at 14:57 found the session gone: `colab sessions` reported "No active sessions found on server" and the kernel endpoint returned 404 (Colab log 14:57:11). Nothing had been pulled before that (no earlier check), so **run 3a produced no recorded result**. Why the VM went away is not known (a reclaimed runtime, a crash of the VM during the run, or something else; no evidence for any of them).
 - **Restart (one):** same settings as Amendment D (T4, 1500 s compiled cap, original first, survivors next, 4 h wall cap), a new session with its own colab `--config` file, and `status.json` pulled to the local disk about every 10 minutes. D.4's rule applies: if the VM is lost again, the result is whatever was last pulled, reported as partial, and no second restart is made.
 - A lost VM is an infrastructure failure, not a result; it is not read as TIMEOUT or as any outcome of the program.
+
+## Run 3 (tutorial 03 mutants, partial: 8 of 14 programs; 2026-10-28 KST 14:58 start, last pull 16:23; raw: `recorded/run3_tutorial03_partial.json`)
+
+Colab T4 (Tesla T4, sm_75), Python 3.13.16, torch 2.11.0+cu130, **triton 3.6.0**: the same versions as Run 2. Session `mg-t03b`, run detached; the status file was pulled every 10 to 25 minutes.
+**The run is partial.** At the pull at 16:49 the session was gone (`colab sessions`: "No active sessions found on server"; the CLI reported 404/401). The last good pull is 16:23 (8 of 14 programs done). Anything the VM finished after 16:23 was not retrieved.
+This is the second lost VM (run 3a was lost before 14:57). Why is not known. Per Amendment E there was no second restart. The 6 programs not run: `mask_lt_to_le` lt#1, lt#2, lt#3, `k_loop_floor_div` kloop#0, `drop_modulo_wrap` mod#0, mod#1 (all caught in the sandbox).
+
+Control first: the ORIGINAL is `PASS` compiled (691.8 s) and in the Colab interpreter (4.2 s), in the same session (Run 2: 699.9 s). The mutants are read.
+
+| mutant | sandbox_interp | colab_compiled | colab_interp |
+|---|---|---|---|
+| `load_other_changed` zero#0 | SURVIVED | PASS (687.8 s) | PASS |
+| `load_other_changed` zero#1 | SURVIVED | PASS (686.9 s) | PASS |
+| `acc_dtype_fp16` acc#0 | SURVIVED | COMPILE_ERROR (3.7 s) | FAIL_ASSERT (InterpreterError) |
+| `drop_load_mask` load#0 | KILLED | PASS (681.9 s) | FAIL_ASSERT (`zeros_no_act: Output mismatch`) |
+| `drop_load_mask` load#1 | KILLED | PASS (683.3 s) | FAIL_ASSERT (`zeros_no_act: Output mismatch`) |
+| `drop_store_mask` store#0 | KILLED | PASS (686.8 s) | OTHER (`free(): invalid pointer`) |
+| `mask_lt_to_le` lt#0 | KILLED | PASS (708.6 s) | PASS |
+
+Against the predictions that stand:
+- The 3 survivors: zero#0 and zero#1 `PASS` compiled (predicted PASS, 85% each) and acc#0 `COMPILE_ERROR` (predicted COMPILE_ERROR, 60%): **all three as predicted**. Reading from the table above: the two zero rows are consistent with equivalence on this hardware (outputs identical in the sandbox), not a proof; the acc#0 row is not a test gap, since the compiler rejects a program the interpreter accepted (the sandbox survival came from the interpreter accepting an invalid program).
+- Dropped-mask family (7 mutants: `drop_load_mask` x2, `drop_store_mask`, `mask_lt_to_le` x4; all caught in the sandbox): 4 of the 4 run are `PASS` compiled, so at least 4 of 7 are `PASS` (**as predicted**, at least half; the prediction holds whatever the 3 untested `mask_lt_to_le` rows would have given). The 3 untested rows and the 3 other caught mutants have no compiled result.
+- `colab_interp` differs from `sandbox_interp` for acc#0 (Colab: FAIL_ASSERT, sandbox: SURVIVED); the columns differ in RNG, device path and Triton version (Amendment A.2), so this is context, not a control.
+- Autotune: every compiled tutorial 03 program that ran chose the same configuration (BLOCK_SIZE_M 32, N 64, K 32, GROUP_SIZE_M 8, num_warps 2, num_stages 5), so the compiled verdicts do not depend on which configuration was chosen.
+
+Limits: 1 file, 3 survivors, 8 of 14 programs, 1 GPU model, 1 Triton build, one generated test, one run per program (no noise estimate). Two VM losses of unknown cause. An illustration, not a rate.
