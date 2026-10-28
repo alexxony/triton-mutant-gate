@@ -188,3 +188,9 @@ Purpose: run tutorial 03's 13 mutants compiled on a T4, the run that Run 2 estim
 6. **Software.** Versions are recorded by the runner. If triton or torch differs from Run 2 (triton 3.6.0, torch 2.11.0+cu130), that is reported before any result is read.
 7. **Hardware.** One T4 session. No A100 run was requested for this experiment; none is made.
 8. **Limits.** 1 file, 3 survivors, 1 GPU model, 1 Triton build, one generated test, one run per program (no repeats, so no noise estimate). An illustration, not a rate.
+
+## Amendment E (2026-10-28 KST 14:58, after run 3a was lost, before the restart; Amendment D otherwise stands)
+
+- **Run 3a:** started 14:30:47 KST on Colab session `mg-t03` (T4, triton 3.6.0, torch 2.11.0+cu130, runner pid 1633). The first pull of `/content/status.json` at 14:57 found the session gone: `colab sessions` reported "No active sessions found on server" and the kernel endpoint returned 404 (Colab log 14:57:11). Nothing had been pulled before that (no earlier check), so **run 3a produced no recorded result**. Why the VM went away is not known (a reclaimed runtime, a crash of the VM during the run, or something else; no evidence for any of them).
+- **Restart (one):** same settings as Amendment D (T4, 1500 s compiled cap, original first, survivors next, 4 h wall cap), a new session with its own colab `--config` file, and `status.json` pulled to the local disk about every 10 minutes. D.4's rule applies: if the VM is lost again, the result is whatever was last pulled, reported as partial, and no second restart is made.
+- A lost VM is an infrastructure failure, not a result; it is not read as TIMEOUT or as any outcome of the program.
