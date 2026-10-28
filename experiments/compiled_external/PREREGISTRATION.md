@@ -175,3 +175,16 @@ result to the predictions table.
 - Consequence, extrapolated and not measured: if each of the 13 mutants took as long as the original (about 700 s), compiled runs of tutorial 03's mutants would need
   about 2.5 hours here. They were not run. A rerun needs its own amendment before it starts (for example fewer autotune configs, which changes the program).
 - The predictions table is unchanged; the 3 tutorial-03 rows are still untested.
+
+## Amendment D (2026-10-28 KST, before any T4 run of tutorial 03's mutants; the predictions table, Amendments A to C and the row-reading table stay as written)
+
+Purpose: run tutorial 03's 13 mutants compiled on a T4, the run that Run 2 estimated at about 2.5 hours. The program text is not changed.
+
+1. **Timeout.** `colab_compiled` gets 1500 s per program (read from `/content/timeout`; Run 0 and Run 2 show the original needs about 700 s). The `colab_interp` column keeps 400 s.
+2. **Control in the same session.** The tutorial 03 ORIGINAL runs first, in both columns. Run 2's 699.9 s (rc 0, `PASS` in stdout) is the earlier reference, not the control, because the Colab image and the host speed may differ. If the original is not `PASS` compiled, none of its mutants are read (control rule above).
+3. **Order.** After the original, the 3 sandbox survivors first (`load_other_changed` zero#0 and zero#1, `acc_dtype_fp16` acc#0: the only rows with a prediction), then the 10 caught mutants in recorded order. If the cap below cuts the run, it cuts caught mutants, not survivors.
+4. **Caps.** Wall cap 4 h (14400 s) from the runner's start: no new program starts if elapsed time plus 1500 s plus 400 s would pass the cap; the result is then marked `partial`. The run is detached (own session on the VM, progress in `/content/status.json`, which I pull about every 20 to 30 minutes). If the VM is lost, the result is whatever was last pulled, reported as partial. A client disconnect alone does not stop the run and is not a stop condition.
+5. **Predictions.** The 3 tutorial-03 rows of the table stand as written (PASS 85%, PASS 85%, COMPILE_ERROR 60%). Added before running: of the 10 caught mutants, at least half of the dropped-mask ones (`drop_load_mask`, `drop_store_mask`, `mask_lt_to_le`; 7 here) are `PASS` compiled (60%; the `autotune_axpy` finding was 4 of 6, and the lower confidence reflects a different kernel and no basis to transfer the rate). A `TIMEOUT` at 1500 s is reported as `TIMEOUT`, not as detected-by-test.
+6. **Software.** Versions are recorded by the runner. If triton or torch differs from Run 2 (triton 3.6.0, torch 2.11.0+cu130), that is reported before any result is read.
+7. **Hardware.** One T4 session. No A100 run was requested for this experiment; none is made.
+8. **Limits.** 1 file, 3 survivors, 1 GPU model, 1 Triton build, one generated test, one run per program (no repeats, so no noise estimate). An illustration, not a rate.

@@ -21,6 +21,10 @@ INTERP = ("import sys; sys.path.insert(0, '/content'); import torch, interp_shim
           "g = runpy.run_path('{p}', run_name='__main__'); " + BEST)
 ONLY_ORIGINALS = os.path.exists("/content/only_originals")   # Amendment A.4: first exec runs the originals only
 ONLY_KERNELS = open("/content/only_kernels").read().split() if os.path.exists("/content/only_kernels") else None   # Amendment B.2
+# Amendment D: compiled timeout from /content/timeout (default 400, interpreter column keeps 400), survivors first, wall cap from /content/wall_cap.
+COMPILED_TIMEOUT = int(open("/content/timeout").read()) if os.path.exists("/content/timeout") else TIMEOUT
+WALL_CAP = int(open("/content/wall_cap").read()) if os.path.exists("/content/wall_cap") else None
+T0 = time.time()
 
 
 def versions():
@@ -61,7 +65,7 @@ def run(path, mode):
     t = time.time()
     stdout = ""
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env, cwd="/content")
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT if mode == "colab_interp" else COMPILED_TIMEOUT, env=env, cwd="/content")
         stdout = r.stdout
         cat, last = classify(r.returncode, r.stdout, r.stderr, False)
     except subprocess.TimeoutExpired:
@@ -78,9 +82,13 @@ def main():
     for k, v in bundle["kernels"].items():
         if ONLY_KERNELS is not None and k not in ONLY_KERNELS:
             continue
-        entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + ([] if ONLY_ORIGINALS else v["mutants"])
+        muts = sorted(v["mutants"], key=lambda m: m["sandbox_interp"] != "SURVIVED")   # stable: survivors first, recorded order otherwise
+        entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + ([] if ONLY_ORIGINALS else muts)
         out = []
         for i, e in enumerate(entries):
+            if WALL_CAP is not None and time.time() - T0 + COMPILED_TIMEOUT + TIMEOUT > WALL_CAP:
+                res["partial"] = f"wall cap {WALL_CAP} s: stopped before starting program {i} of {len(entries)}"
+                break
             p = f"{WORK}/{k}_{i}.py"
             open(p, "w").write(e["program"])
             row = {"op": e["op"], "site": e["site"], "sandbox_interp": e["sandbox_interp"]}
@@ -90,6 +98,8 @@ def main():
             res["kernels"][k] = out
             json.dump(res, open(STATUS, "w"))   # progress file, survives a client-side stall
             print(k, e["op"], e["site"], "compiled=", row["colab_compiled"]["result"], "interp=", row["colab_interp"]["result"], flush=True)
+    res["finished"] = True
+    json.dump(res, open(STATUS, "w"))
     print("@@RESULT_BEGIN@@")
     print(json.dumps(res))
     print("@@RESULT_END@@")
