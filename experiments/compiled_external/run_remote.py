@@ -24,6 +24,9 @@ ONLY_KERNELS = open("/content/only_kernels").read().split() if os.path.exists("/
 # Amendment D: compiled timeout from /content/timeout (default 400, interpreter column keeps 400), survivors first, wall cap from /content/wall_cap.
 COMPILED_TIMEOUT = int(open("/content/timeout").read()) if os.path.exists("/content/timeout") else TIMEOUT
 WALL_CAP = int(open("/content/wall_cap").read()) if os.path.exists("/content/wall_cap") else None
+# Amendment F: /content/only_mutants lists "op site" pairs, one per line; only those mutants run after the ORIGINAL.
+ONLY_MUTANTS = ([tuple(l.split(None, 1)) for l in open("/content/only_mutants").read().splitlines() if l.strip()]
+                if os.path.exists("/content/only_mutants") else None)
 T0 = time.time()
 
 
@@ -83,6 +86,8 @@ def main():
         if ONLY_KERNELS is not None and k not in ONLY_KERNELS:
             continue
         muts = sorted(v["mutants"], key=lambda m: m["sandbox_interp"] != "SURVIVED")   # stable: survivors first, recorded order otherwise
+        if ONLY_MUTANTS is not None:
+            muts = [m for m in muts if (m["op"], m["site"]) in ONLY_MUTANTS]
         entries = [{"op": "ORIGINAL", "site": "-", "program": v["original"], "sandbox_interp": "n/a"}] + ([] if ONLY_ORIGINALS else muts)
         out = []
         for i, e in enumerate(entries):
