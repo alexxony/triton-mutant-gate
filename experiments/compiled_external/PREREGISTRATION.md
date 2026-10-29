@@ -220,3 +220,13 @@ Against the predictions that stand:
 - Autotune: every compiled tutorial 03 program that ran chose the same configuration (BLOCK_SIZE_M 32, N 64, K 32, GROUP_SIZE_M 8, num_warps 2, num_stages 5), so the compiled verdicts do not depend on which configuration was chosen.
 
 Limits: 1 file, 3 survivors, 8 of 14 programs, 1 GPU model, 1 Triton build, one generated test, one run per program (no noise estimate). Two VM losses of unknown cause. An illustration, not a rate.
+
+## Amendment F (2026-10-29T15:10+09:00, before any further T4 run; Amendment D stands except as changed here; the predictions and the Run 3 reading stay as written)
+
+- **Why:** Run 3 is partial (8 of 14 programs) because two VMs were lost (Amendment E, Run 3). The 6 programs not run are `mask_lt_to_le` lt#1, lt#2, lt#3, `k_loop_floor_div` kloop#0, `drop_modulo_wrap` mod#0, mod#1. Amendment E's one restart is used up; this amendment is a new, explicit decision by the user (2026-10-29) to run those 6 once more. No new predictions are made and no program text is changed.
+- **Runner change:** `run_remote.py` gets one optional input, read from the VM and absent by default (behavior unchanged without them): `/content/only_mutants` (one `op site` pair per line, e.g. `mask_lt_to_le matmul_kernel:lt#1`; only those mutants are run after the ORIGINAL). No other change. The ORIGINAL still runs first in the same session as the control (Amendment D.2); if it is not `PASS` compiled, none of the 6 are read.
+- **Run:** a new T4 session (own colab `--config` file), `/content/only_kernels` = `tutorial03`, `/content/timeout` = 1500, `/content/wall_cap` = 14400, the 6 mutants in recorded order. Expected about 1.4 h (original about 12 min, each mutant about 12 min). `status.json` is pulled about every 15 minutes.
+- **If the VM is lost again:** the result is whatever was last pulled, reported as partial, no further restart. A lost VM is an infrastructure failure, not an outcome of any program.
+- **Reading:** these 6 rows are added to the Run 3 table as a separate "Run 4" block (different session, so not pooled silently with the Run 3 session). `TIMEOUT` at 1500 s is reported as `TIMEOUT`. The dropped-mask prediction (at least 4 of 7 `PASS`, Amendment D.5) already holds from Run 3 alone; Run 4 adds rows, it does not test a new claim.
+- **Software:** versions recorded by the runner; if triton or torch differs from Run 3 (triton 3.6.0, torch 2.11.0+cu130) that is reported before any result is read.
+
