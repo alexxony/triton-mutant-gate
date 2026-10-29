@@ -230,3 +230,27 @@ Limits: 1 file, 3 survivors, 8 of 14 programs, 1 GPU model, 1 Triton build, one 
 - **Reading:** these 6 rows are added to the Run 3 table as a separate "Run 4" block (different session, so not pooled silently with the Run 3 session). `TIMEOUT` at 1500 s is reported as `TIMEOUT`. The dropped-mask prediction (at least 4 of 7 `PASS`, Amendment D.5) already holds from Run 3 alone; Run 4 adds rows, it does not test a new claim.
 - **Software:** versions recorded by the runner; if triton or torch differs from Run 3 (triton 3.6.0, torch 2.11.0+cu130) that is reported before any result is read.
 
+## Run 4 (the 6 programs Run 3 did not reach, per Amendment F; 2026-10-29 KST 15:18 start, finished 16:4x; raw: `recorded/run4_tutorial03_six_mutants.json`, sha256 prefix `c207e4d3bfae23db`)
+
+Colab T4 (Tesla T4), Python 3.13.16, torch 2.11.0+cu130, **triton 3.6.0**: same versions as Run 3. New session `mg-t03c`, detached, runner exit code 0, `finished: true`, no VM loss, nothing partial. This is a different session from Run 3, so the rows are listed separately, not pooled into one session.
+
+Control first: the ORIGINAL is `PASS` compiled (688.3 s) and in the Colab interpreter, in the same session (Run 3: 691.8 s, Run 2: 699.9 s). The mutants are read.
+
+| mutant | sandbox_interp | colab_compiled | colab_interp |
+|---|---|---|---|
+| `mask_lt_to_le` lt#1 | KILLED | PASS (704.2 s) | FAIL_ASSERT (`zeros_no_act: Output mismatch`) |
+| `mask_lt_to_le` lt#2 | KILLED | PASS (694.8 s) | OTHER (`free(): invalid pointer`) |
+| `mask_lt_to_le` lt#3 | KILLED | PASS (697.7 s) | OTHER (`free(): invalid pointer`) |
+| `k_loop_floor_div` kloop#0 | KILLED | **FAIL_ASSERT** (695.7 s, `ones_no_act: Output mismatch`) | FAIL_ASSERT (`ones_no_act: Output mismatch`) |
+| `drop_modulo_wrap` mod#0 | KILLED | PASS (692.9 s) | PASS |
+| `drop_modulo_wrap` mod#1 | KILLED | PASS (687.2 s) | PASS |
+
+Reading, with Run 3 (all 14 programs now have a compiled result: 1 original + 13 mutants):
+- Dropped-mask family (7 mutants, all killed in the sandbox): **7 of 7 `PASS` compiled** (Run 3: 4, Run 4: 3). The Amendment D.5 prediction (at least half `PASS`) holds.
+- Of the 10 mutants the sandbox killed, **9 are `PASS` compiled** (the 7 mask ones and `drop_modulo_wrap` mod#0 and mod#1) and **1 is caught compiled** (`k_loop_floor_div` kloop#0). So for 9 of 10, the compiled run on this T4 does not flag a mutant that the sandbox interpreter flagged. These are not proven equivalent mutants: a generated test run once, on one GPU, with outputs that happened to match.
+- `drop_modulo_wrap` mod#0 and mod#1 are `PASS` in both Colab columns while the sandbox killed them; the three columns differ in RNG, device path and Triton version (Amendment A.2), so this is context, not a control.
+- kloop#0 has no autotune config line in the compiled column (the program failed before it printed one); no claim about its configuration.
+- Autotune: the compiled programs that ran chose either the Run 3 config (BLOCK_SIZE_M 32, N 64, K 32) or, for lt#1 only, BLOCK_SIZE_M 64, N 32, K 32 (same GROUP_SIZE_M 8, num_warps 2, num_stages 5); lt#1 still `PASS`, so the verdict does not obviously depend on it (one program, not tested further).
+
+Limits: 1 file, 3 survivors, 1 GPU model, 1 Triton build, one generated test, one run per program (no noise estimate), two sessions. An illustration, not a rate.
+

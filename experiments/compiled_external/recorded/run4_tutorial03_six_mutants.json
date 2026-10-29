@@ -1,0 +1,150 @@
+{
+ "versions": {
+  "python": "3.13.16",
+  "torch": "2.11.0+cu130",
+  "triton": "3.6.0",
+  "cuda_and_gpu": "13.0 Tesla T4"
+ },
+ "kernels": {
+  "tutorial03": [
+   {
+    "op": "ORIGINAL",
+    "site": "-",
+    "sandbox_interp": "n/a",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 688.3,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 32, BLOCK_SIZE_N: 64, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 4.1,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 128, BLOCK_SIZE_N: 256, BLOCK_SIZE_K: 64, GROUP_SIZE_M: 8, num_warps: 8, num_ctas: 1, num_stages: 3, maxnreg: None"
+     ]
+    }
+   },
+   {
+    "op": "mask_lt_to_le",
+    "site": "matmul_kernel:lt#1",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 704.2,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 64, BLOCK_SIZE_N: 32, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "FAIL_ASSERT",
+     "detail": "AssertionError: zeros_no_act: Output mismatch",
+     "seconds": 3.9,
+     "best_config": []
+    }
+   },
+   {
+    "op": "mask_lt_to_le",
+    "site": "matmul_kernel:lt#2",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 694.8,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 32, BLOCK_SIZE_N: 64, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "OTHER",
+     "detail": "free(): invalid pointer",
+     "seconds": 3.5,
+     "best_config": []
+    }
+   },
+   {
+    "op": "mask_lt_to_le",
+    "site": "matmul_kernel:lt#3",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 697.7,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 32, BLOCK_SIZE_N: 64, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "OTHER",
+     "detail": "free(): invalid pointer",
+     "seconds": 3.6,
+     "best_config": []
+    }
+   },
+   {
+    "op": "k_loop_floor_div",
+    "site": "matmul_kernel:kloop#0",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "FAIL_ASSERT",
+     "detail": "AssertionError: ones_no_act: Output mismatch",
+     "seconds": 695.7,
+     "best_config": []
+    },
+    "colab_interp": {
+     "result": "FAIL_ASSERT",
+     "detail": "AssertionError: ones_no_act: Output mismatch",
+     "seconds": 3.9,
+     "best_config": []
+    }
+   },
+   {
+    "op": "drop_modulo_wrap",
+    "site": "matmul_kernel:mod#0",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 692.9,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 32, BLOCK_SIZE_N: 64, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 4.0,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 128, BLOCK_SIZE_N: 256, BLOCK_SIZE_K: 64, GROUP_SIZE_M: 8, num_warps: 8, num_ctas: 1, num_stages: 3, maxnreg: None"
+     ]
+    }
+   },
+   {
+    "op": "drop_modulo_wrap",
+    "site": "matmul_kernel:mod#1",
+    "sandbox_interp": "KILLED",
+    "colab_compiled": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 687.2,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 32, BLOCK_SIZE_N: 64, BLOCK_SIZE_K: 32, GROUP_SIZE_M: 8, num_warps: 2, num_ctas: 1, num_stages: 5, maxnreg: None"
+     ]
+    },
+    "colab_interp": {
+     "result": "PASS",
+     "detail": "",
+     "seconds": 4.1,
+     "best_config": [
+      "matmul_kernel BLOCK_SIZE_M: 128, BLOCK_SIZE_N: 256, BLOCK_SIZE_K: 64, GROUP_SIZE_M: 8, num_warps: 8, num_ctas: 1, num_stages: 3, maxnreg: None"
+     ]
+    }
+   }
+  ]
+ },
+ "finished": true
+}
